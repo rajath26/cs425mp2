@@ -1,11 +1,12 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+#include<unistd.h>
 
 #define UP 1
 #define DOWN 0
 #define MAX_HOSTS 4
-
+#define TFAIL 10
 char *host_ip_address="192.168.100.100";
 char *host_port="1234";
 
@@ -21,8 +22,37 @@ struct hb_entry {
   int status;
 }; 
 
-struct hb_entry entry[4];
-struct hb_entry hb_table[4];
+struct hb_entry entry[4];  // this table is used to extract values from the message
+struct hb_entry hb_table[4];  // this is the heart beat table mantained for a single host
+
+void update_my_entry()
+{
+  hb_table[host_no].hb_count++;
+}
+
+void check_table_for_failed_hosts()
+{
+  int i;
+  struct timeval timer;
+  for(i=0;i<MAX_HOSTS;i++){
+       if(hb_table[i].valid==1){
+                gettimeofday(&timer,NULL);
+                long int cmp_time = atoi(hb_table[i].time_stamp);
+                if((timer.tv_sec - cmp_time) >= TFAIL){
+                           hb_table[i].status = DOWN;
+                }
+       }
+  }
+}
+void periodic_heartbeat_update()
+{
+  while(1){
+       sleep(1);
+       update_my_entry();
+       check_table_for_failed_hosts();
+  }
+}        
+  
 
 void initialize_table()
 {
@@ -68,6 +98,38 @@ void print_table(struct hb_entry *table)
    printf("%d\t::\t%s\t::\t%s\t::\t%s\t::\t%d\t\t::\t%s\t\t::\t%d\n",table[i].valid,table[i].host_id,table[i].IP,table[i].port,table[i].hb_count,table[i].time_stamp,table[i].status);
     }
    }
+}
+
+void update_table(struct hb_entry *msg_table)
+{ 
+  int i=0;
+  for(i=0;i<4;i++){
+       if(msg_table[i].valid){
+              if(msg_table[i].hb_count > hb_table[i].hb_count){
+                       if(!hb_table[i].valid){
+                                 hb_table[i].valid=1;
+                                 strcpy(hb_table[i].host_id,msg_table[i].host_id);
+                                 strcpy(hb_table[i].IP,msg_table[i].IP); 
+                                 strcpy(hb_table[i].port,msg_table[i].port);
+                                 hb_table[i].hb_count=msg_table[i].hb_count;
+                                 struct timeval cur_t;
+                                 gettimeofday(&cur_t,NULL);
+                                 char buffer[50];
+                                 sprintf(buffer,"%ld",cur_t.tv_sec);
+                                 strcpy(hb_table[i].time_stamp,buffer);
+                                 hb_table[i].status=msg_table[i].status;
+                        }
+                       else {       
+                      	 hb_table[i].hb_count=msg_table[i].hb_count;
+                      	 struct timeval cur_t;
+                     	 gettimeofday(&cur_t,NULL);
+                       	 char buffer[50];
+                         sprintf(buffer,"%ld",cur_t.tv_sec);
+                         strcpy(hb_table[i].time_stamp,buffer);
+                       }
+              }
+       }
+  }
 }
 
 
@@ -125,6 +187,9 @@ struct hb_entry* extract_message(char *input)
                     entry[i].status = atoi(token);
                     printf("%d\n",entry[i].status);
                }
+              else{
+                 memset(&entry[i],0,sizeof(struct hb_entry));
+              }
        i++;
     }
     return entry;            
@@ -135,21 +200,24 @@ struct hb_entry* extract_message(char *input)
 void main()
 {
 char *ptr=(char *)malloc(200);
-strcpy(ptr,"1:0_1380475981:192.168.100.120:1234:0:0:1;0::::0::0;0::::0::0;0::::0::0;");
+strcpy(ptr,"1:0_1380475981:192.168.100.120:1234:123:0:1;1:1_1234567891:192.123.456.678:123:12345:0:0;0::::0::0;0::::0::0;");
 
 struct hb_entry *hb_entry1=extract_message(ptr);
+print_table(hb_entry1);
+//update_table(hb_entry1);
 
-printf("\n%s\n",hb_entry1[0].IP);
-printf("%d\n",hb_entry1[0].valid);
+//printf("\n%s\n",hb_entry1[0].IP);
+//printf("%d\n",hb_entry1[0].valid);
 
 initialize_table();
-printf("%s\n",hb_table[0].IP);
-printf("%s\n",hb_table[0].host_id);
+//printf("%s\n",hb_table[0].IP);
+//printf("%s\n",hb_table[0].host_id);
 
 char *buffer;
-printf("i am here\n");
-buffer=create_message();
-printf("%s",buffer);
+//printf("i am here\n");
+//buffer=create_message();
+//printf("%s",buffer);
+
+update_table(hb_entry1);
 print_table(hb_table);
-print_table(entry);
 }
