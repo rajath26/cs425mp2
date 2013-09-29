@@ -15,6 +15,11 @@ char *host_port="1234";
 
 int host_no=0;
 
+struct two_hosts{
+  int host_id;
+  int valid;
+};
+
 struct hb_entry {
   int  valid;
   char host_id[70];  // combination of host_id and time_of_creation
@@ -200,7 +205,32 @@ struct hb_entry* extract_message(char *input)
       
 }
 
+/* initialize 2 hosts */
+void initialize_two_hosts(struct two_hosts* ptr)
+{
+   memset(&ptr[0],0,sizeof(struct two_hosts));
+   memset(&ptr[1],0,sizeof(struct two_hosts));
+}
 
+/* algorithm for finding two neighboring hosts */
+
+struct two_hosts* choose_two_hosts(struct two_hosts* ptr)
+{
+  int cur_host = host_no;
+  int nbr_host = (host_no+1)%MAX_HOSTS;
+  int i=0;
+  int count=0;
+  for(i=0;i<MAX_HOSTS-1;i++){
+       if(hb_table[nbr_host].valid){
+                 ptr[count].host_id = nbr_host;
+                 ptr[count].valid = 1;
+                 count++;
+        if(count==2) break;
+       }
+       nbr_host=(nbr_host+1)%MAX_HOSTS; 
+  }
+ return ptr;             
+}  
 
 void go_live(char *message)
 {
