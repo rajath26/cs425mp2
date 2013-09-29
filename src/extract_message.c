@@ -7,6 +7,9 @@
 #define DOWN 0
 #define MAX_HOSTS 4
 #define TFAIL 10
+#define JOIN_OPCODE 1
+#define LEAVE_OPCODE 2
+
 char *host_ip_address="192.168.100.100";
 char *host_port="1234";
 
@@ -126,6 +129,7 @@ void update_table(struct hb_entry *msg_table)
                        	 char buffer[50];
                          sprintf(buffer,"%ld",cur_t.tv_sec);
                          strcpy(hb_table[i].time_stamp,buffer);
+                         hb_table[i].status=msg_table[i].status;
                        }
               }
        }
@@ -195,6 +199,14 @@ struct hb_entry* extract_message(char *input)
     return entry;            
       
 }
+
+
+
+void go_live(char *message)
+{
+  char *buffer = (char *)malloc(2000);
+  sprintf(buffer,"%d#%s",JOIN_OPCODE,message);  
+}
        
 
 void main()
@@ -204,6 +216,10 @@ strcpy(ptr,"1:0_1380475981:192.168.100.120:1234:123:0:1;1:1_1234567891:192.123.4
 
 struct hb_entry *hb_entry1=extract_message(ptr);
 print_table(hb_entry1);
+
+char buffer[200];
+//sprintf(buffer,"%d::%s",JOIN_OPCODE,"karthik");
+printf("hellooooooooooooooooooo  %s helooooooooooo",buffer);
 //update_table(hb_entry1);
 
 //printf("\n%s\n",hb_entry1[0].IP);
@@ -213,7 +229,7 @@ initialize_table();
 //printf("%s\n",hb_table[0].IP);
 //printf("%s\n",hb_table[0].host_id);
 
-char *buffer;
+//char *buffer;
 //printf("i am here\n");
 //buffer=create_message();
 //printf("%s",buffer);
