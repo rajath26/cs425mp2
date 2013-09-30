@@ -2,15 +2,25 @@
 #include<stdlib.h>
 #include<string.h>
 #include<unistd.h>
+#include"message.h"
 
+/*
 #define UP 1
 #define DOWN 0
 #define MAX_HOSTS 4
 #define TFAIL 10
+#define JOIN_OPCODE 1
+#define LEAVE_OPCODE 2
+
 char *host_ip_address="192.168.100.100";
 char *host_port="1234";
 
 int host_no=0;
+
+struct two_hosts{
+  int host_id;
+  int valid;
+};
 
 struct hb_entry {
   int  valid;
@@ -24,6 +34,7 @@ struct hb_entry {
 
 struct hb_entry entry[4];  // this table is used to extract values from the message
 struct hb_entry hb_table[4];  // this is the heart beat table mantained for a single host
+*/
 
 void update_my_entry()
 {
@@ -126,6 +137,7 @@ void update_table(struct hb_entry *msg_table)
                        	 char buffer[50];
                          sprintf(buffer,"%ld",cur_t.tv_sec);
                          strcpy(hb_table[i].time_stamp,buffer);
+                         hb_table[i].status=msg_table[i].status;
                        }
               }
        }
@@ -195,6 +207,39 @@ struct hb_entry* extract_message(char *input)
     return entry;            
       
 }
+
+/* initialize 2 hosts */
+void initialize_two_hosts(struct two_hosts* ptr)
+{
+   memset(&ptr[0],0,sizeof(struct two_hosts));
+   memset(&ptr[1],0,sizeof(struct two_hosts));
+}
+
+/* algorithm for finding two neighboring hosts */
+
+int choose_two_hosts(struct two_hosts* ptr)
+{
+  int cur_host = host_no;
+  int nbr_host = (host_no+1)%MAX_HOSTS;
+  int i=0;
+  int count=0;
+  for(i=0;i<MAX_HOSTS-1;i++){
+       if(hb_table[nbr_host].valid){
+                 ptr[count].host_id = nbr_host;
+                 ptr[count].valid = 1;
+                 count++;
+        if(count==2) break;
+       }
+       nbr_host=(nbr_host+1)%MAX_HOSTS; 
+  }
+ return count;             
+}  
+
+void go_live(char *message)
+{
+  char *buffer = (char *)malloc(2000);
+  sprintf(buffer,"%d#%s",JOIN_OPCODE,message);  
+}
        
 
 void main()
@@ -204,6 +249,10 @@ strcpy(ptr,"1:0_1380475981:192.168.100.120:1234:123:0:1;1:1_1234567891:192.123.4
 
 struct hb_entry *hb_entry1=extract_message(ptr);
 print_table(hb_entry1);
+
+char buffer[200]="KARTHIK";
+//sprintf(buffer,"%d::%s",JOIN_OPCODE,"karthik");
+printf("hellooooooooooooooooooo  %s helooooooooooo",buffer);
 //update_table(hb_entry1);
 
 //printf("\n%s\n",hb_entry1[0].IP);
@@ -213,7 +262,7 @@ initialize_table();
 //printf("%s\n",hb_table[0].IP);
 //printf("%s\n",hb_table[0].host_id);
 
-char *buffer;
+//char *buffer;
 //printf("i am here\n");
 //buffer=create_message();
 //printf("%s",buffer);
