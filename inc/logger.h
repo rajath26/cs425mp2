@@ -44,6 +44,7 @@ int printToLog(
 int logFileClose(
                  FILE *fp         // File pointer 
                 );
+void *approverMemberHosts();
 
 /*
  * End 
