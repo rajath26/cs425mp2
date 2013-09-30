@@ -4,6 +4,7 @@
 #define TFAIL 10
 #define JOIN_OPCODE 1
 #define LEAVE_OPCODE 2
+#define MAX_CHOSEN_HOSTS 2
 
 char *host_ip_address="192.168.100.100";
 char *host_port="1234";
@@ -37,6 +38,6 @@ void print_table(struct hb_entry*);
 void update_table(struct hb_entry *);
 struct hb_entry* extract_message(char *);
 void initialize_two_hosts(struct two_hosts *);
-struct two_hosts* choose_two_hosts(struct two_hosts *);
+int choose_two_hosts(struct two_hosts *);
 void go_live(char *);
 
