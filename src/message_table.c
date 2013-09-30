@@ -36,6 +36,15 @@ struct hb_entry entry[4];  // this table is used to extract values from the mess
 struct hb_entry hb_table[4];  // this is the heart beat table mantained for a single host
 */
 
+
+void clear_temp_entry_table()
+{
+  int i=0;
+  for(i=0;i<MAX_HOSTS;i++){
+     memset(&entry[i],0,sizeof(struct hb_entry));
+  }
+}
+
 void update_my_entry()
 {
   hb_table[host_no].hb_count++;
@@ -51,6 +60,7 @@ void check_table_for_failed_hosts()
                 long int cmp_time = atoi(hb_table[i].time_stamp);
                 if((timer.tv_sec - cmp_time) >= TFAIL){
                            hb_table[i].status = DOWN;
+                           /*put a logger message*/
                 }
        }
   }
