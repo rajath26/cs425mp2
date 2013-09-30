@@ -116,6 +116,22 @@ int setUpUDP(char * portNo, char * ipAddress)
 
 } // End of setUpUDP()
 
+/*****************************************************************
+ * NAME: approverMemberHosts 
+ *
+ * DESCRIPTION: This function is designed to create a UDP and 
+ *              bind to the port 
+ *              
+ * PARAMETERS: 
+ *            (char *) portNo: port number
+ *            (char *) ipAddress: IP Address
+ * 
+ * RETURN:
+ * (int) ZERO if success
+ *       ERROR otherwise
+ * 
+ ****************************************************************/
+
 /*
  * Main function
  */
@@ -160,7 +176,8 @@ int main(int argc, char *argv[])
 
     FILE *log;                     // File pointer to log 
                     
-    pthread_t threadID[NUM_OF_THREADS];
+    pthread_t approverThread,              // Approver thread
+              threadID[NUM_OF_THREADS];    // Helper threads
 
     /*
      * Command line arguments check
@@ -209,6 +226,24 @@ int main(int argc, char *argv[])
     {
         rc = ERROR;
         goto rtn;
+    }
+
+    /*
+     * If this host is a leader spawn a thread that acts as an 
+     * approver for other member hosts
+     */ 
+    if ( isLeader )
+    {
+        i_rc = pthread_create(&approverThread, NULL, approverMemberHosts, NULL);
+        if ( i_rc != SUCCESS )
+        {
+            printf("\nThread creation failed\n");
+            printf("\nError Number: %d\n", errno);
+            perror("pthread_create");
+            printf("\nExiting.... ... .. .\n");
+            rc = ERROR;
+            goto rtn;
+        }
     }
 
     // If the current host is a LEADER then log that this host
