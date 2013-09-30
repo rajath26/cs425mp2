@@ -72,7 +72,7 @@ int logFileCreate(FILE *fp)
  *       ERROR otherwise
  * 
  ****************************************************************/
-int printLog(FILE *fp, char *keyMsg, char *valueMsg)
+int printToLog(FILE *fp, char *keyMsg, char *valueMsg)
 {
 
     int rc = SUCCESS;        // Return code
