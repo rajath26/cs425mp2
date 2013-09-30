@@ -1,3 +1,5 @@
+#include<pthread.h>
+
 #define UP 1
 #define DOWN 0
 #define MAX_HOSTS 4
@@ -5,9 +7,16 @@
 #define JOIN_OPCODE 1
 #define LEAVE_OPCODE 2
 #define MAX_CHOSEN_HOSTS 2
+#define HOSTID_LENGTH 70
+#define IP_ADDRESS_LEN 30
+#define PORT_LENGTH 5
+#define TIME_STAMP_LEN 20
+#define HEART_BEAT_UPDATE_SEC 1
 
 char *host_ip_address="192.168.100.100";
 char *host_port="1234";
+
+pthread_mutex_t table_mutex;
 
 int host_no=0;
 
@@ -18,16 +27,16 @@ struct two_hosts{
 
 struct hb_entry {
   int  valid;
-  char host_id[70];  // combination of host_id and time_of_creation
-  char IP[80];
-  char port[10];
+  char host_id[HOSTID_LENGTH];  // combination of host_id and time_of_creation
+  char IP[IP_ADDRESS_LEN];
+  char port[PORT_LENGTH];
   int hb_count;
-  char time_stamp[20];
+  char time_stamp[TIME_STAMP_LEN];
   int status;
 };
 
-struct hb_entry entry[4];  // this table is used to extract values from the message
-struct hb_entry hb_table[4];  // this is the heart beat table mantained for a single host
+struct hb_entry entry[MAX_HOSTS];  // this table is used to extract values from the message
+struct hb_entry hb_table[MAX_HOSTS];  // this is the heart beat table mantained for a single host
 
 void update_my_entry();
 void check_table_for_failed_hosts();
