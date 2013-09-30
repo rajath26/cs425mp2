@@ -40,4 +40,4 @@ struct hb_entry* extract_message(char *);
 void initialize_two_hosts(struct two_hosts *);
 int choose_two_hosts(struct two_hosts *);
 void go_live(char *);
-
+void clear_temp_entry_table();
