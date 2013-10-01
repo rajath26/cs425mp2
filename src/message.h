@@ -38,15 +38,15 @@ struct hb_entry {
 struct hb_entry entry[MAX_HOSTS];  // this table is used to extract values from the message
 struct hb_entry hb_table[MAX_HOSTS];  // this is the heart beat table mantained for a single host
 
-void update_my_entry();
-void check_table_for_failed_hosts();
+int update_my_heartbeat();
+int check_table_for_failed_hosts();
 void periodic_heartbeat_update();
-void initialize_table();
-char *create_message();
-void print_table(struct hb_entry*);
-void update_table(struct hb_entry *);
+int initialize_table();
+int create_message(char *);
+int print_table(struct hb_entry*);
+int update_table(struct hb_entry *);
 struct hb_entry* extract_message(char *);
 void initialize_two_hosts(struct two_hosts *);
-int choose_two_hosts(struct two_hosts *);
+int choose_n_hosts(struct two_hosts *, int);
 void go_live(char *);
-void clear_temp_entry_table();
+int clear_temp_entry_table(struct hb_entry*);

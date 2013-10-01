@@ -3,6 +3,8 @@
 #include<string.h>
 #include<unistd.h>
 #include"message.h"
+#include"logger.c"
+#define TREMOVE 10
 
 /*
 #define UP 1
@@ -37,22 +39,39 @@ struct hb_entry hb_table[4];  // this is the heart beat table mantained for a si
 */
 
 
-void clear_temp_entry_table()
+int delete_entry_table(int table_index)
+{
+   memset(&hb_table[table_index],0,sizeof(struct hb_entry));
+   char message[100];
+   sprintf(message,"host_entry %d in the hb_table is deleted",table_index);
+   printToLog(fp,hb_table[host_no].host_id,message);
+   return 0;
+}
+
+int clear_temp_entry_table(struct hb_entry *msg_table)
 {
   int i=0;
+  char message[100];
+  printToLog(fp,hb_table[host_no].host_id,"temporary entry is being deleted");
   for(i=0;i<MAX_HOSTS;i++){
-     memset(&entry[i],0,sizeof(struct hb_entry));
+     memset(&msg_table[i],0,sizeof(struct hb_entry));
   }
+  return 0;
 }
 
-void update_my_entry()
+int update_my_heartbeat()
 {
+  struct timeval timer;
+  char buffer[32];
   pthread_mutex_lock(&table_mutex);
   hb_table[host_no].hb_count++;
+  gettimeofday(&timer,NULL);
+  sprintf(hb_table[host_no].time_stamp,"%ld",timer.tv_sec);
   pthread_mutex_unlock(&table_mutex);
+  return 0;
 }
 
-void check_table_for_failed_hosts()
+int check_table_for_failed_hosts()
 {
   int i;
   struct timeval timer;
@@ -64,11 +83,23 @@ void check_table_for_failed_hosts()
                 if((timer.tv_sec - cmp_time) >= TFAIL){
                            hb_table[i].status = DOWN;
                            /*put a logger message*/
+                           char message[100];
+                           sprintf(message,"Entry %d is being marked DOWN\n",i);
+                           printToLog(fp,hb_table[host_no].host_id,message);
+                }
+                if((timer.tv_sec - cmp_time) >= TREMOVE){
+                           delete_entry_table(i);
+                           char message[100];
+                           sprintf(message,"Entry %d is being removed\n",i);  
+                           printToLog(fp,hb_table[host_no].host_id,message);
                 }
        }
   }
   pthread_mutex_unlock(&table_mutex);
+  return 0;
 }
+
+/*
 void periodic_heartbeat_update()
 {
   pthread_mutex_lock(&table_mutex);
@@ -79,12 +110,13 @@ void periodic_heartbeat_update()
   }
   pthread_mutex_unlock(&table_mutex);
 }        
-  
+*/  
 
-void initialize_table()
+int initialize_table()
 {
   int i=0;
-  pthread_mutex_lock(&table_mutex);
+  printToLog(fp,hb[host_no].host_id,"Initializing gossip table");
+//  pthread_mutex_lock(&table_mutex);
   for(i=0;i<MAX_HOSTS;i++)
     {
       if(i!=host_no)
@@ -99,28 +131,31 @@ void initialize_table()
          strcpy(hb_table[i].host_id,buffer); // initialize host_id
          strcpy(hb_table[i].IP,host_ip_address); // initialize ip
          strcpy(hb_table[i].port,host_port);  // initialize port
-         hb_table[i].hb_count=0;
+         hb_table[i].hb_count=-1;
          strcpy(hb_table[i].time_stamp,"0");
          hb_table[i].status=1;
+         update_my_heartbeat();
       }
     }
-  pthread_mutex_unlock(&table_mutex);
+//  pthread_mutex_unlock(&table_mutex);
+
+return 0;
 }    
-char* create_message()
+int create_message(char *buffer)
 {
    int i;
    char msg[200];
-   char *buffer=(char *)malloc((4*sizeof(struct hb_entry))+50);
    pthread_mutex_lock(&table_mutex);
    for(i=0;i<MAX_HOSTS;i++){
        sprintf(msg,"%d:%s:%s:%s:%d:%s:%d;",hb_table[i].valid,hb_table[i].host_id,hb_table[i].IP,hb_table[i].port,hb_table[i].hb_count,hb_table[i].time_stamp,hb_table[i].status);
        strcat(buffer,msg);
+       memset(msg,0,200);
    }     
    pthread_mutex_unlock(&table_mutex);
-   return buffer;
+   return 0;
 }
 
-void print_table(struct hb_entry *table)
+int print_table(struct hb_entry *table)
 {
    int i=0;
    printf("\n valid\t::\thost_id\t\t::\tIP\t\t::\tPORT\t::\tHB_COUNT\t::\tTIME STAMP\t::\tSTATUS\n");
@@ -131,13 +166,15 @@ void print_table(struct hb_entry *table)
     }
    }
    pthread_mutex_unlock(&table_mutex);
+   return 0;
 }
 
-void update_table(struct hb_entry *msg_table)
+int update_table(struct hb_entry *msg_table)
 { 
   int i=0;
   pthread_mutex_lock(&table_mutex);
-  for(i=0;i<4;i++){
+  clear_temp_entry_table(msg_table);
+  for(i=0;i<MAX_HOSTS;i++){
        if(msg_table[i].valid){
               if(msg_table[i].hb_count > hb_table[i].hb_count){
                        if(!hb_table[i].valid){
@@ -166,6 +203,7 @@ void update_table(struct hb_entry *msg_table)
        }
   }
   pthread_mutex_unlock(&table_mutex);
+  return 0;
 }
 
 
@@ -241,6 +279,46 @@ void initialize_two_hosts(struct two_hosts* ptr)
 
 /* algorithm for finding two neighboring hosts */
 
+int choose_n_hosts(struct two_hosts *ptr, int choice)
+{
+  int i=0;
+  int k=0;
+  int count=0;
+  int value;
+  int list[MAX_HOSTS];
+  for(i=0;i<MAX_HOSTS;i++) list[i]=0;
+  int counter=0;
+  for(i=0;i<MAX_HOSTS;i++){
+         if(hb_table[i].valid){
+                     list[counter]=i;
+                     counter++;
+         }
+  }
+  if(counter==1)
+    return -1;
+  // choose the remaining host
+  if(counter==2){
+       for(i=0;i<counter;i++){
+              if(i!=host_no){
+                    ptr[k].host_id=list[i];
+                    ptr[k].valid = 1;
+               }       
+       }
+  }
+  //general case - iterate till you find choice number of hosts
+  for(i=0;i<choice;i++){
+        while(1){ // don't find me
+              value=rand()%counter;
+              if(list[value]!=host_no)
+              break;
+        }
+      ptr[k].host_id=list[value];
+      ptr[k].valid=1;
+      k++;
+  } 
+}
+  
+/*
 int choose_two_hosts(struct two_hosts* ptr)
 {
   int cur_host = host_no;
@@ -260,7 +338,7 @@ int choose_two_hosts(struct two_hosts* ptr)
   pthread_mutex_unlock(&table_mutex);
  return count;             
 }  
-
+*/
 void go_live(char *message)
 {
   char *buffer = (char *)malloc(2000);
@@ -276,9 +354,9 @@ strcpy(ptr,"1:0_1380475981:192.168.100.120:1234:123:0:1;1:1_1234567891:192.123.4
 struct hb_entry *hb_entry1=extract_message(ptr);
 print_table(hb_entry1);
 
-char buffer[200]="KARTHIK";
+//char buffer[200]="KARTHIK";
 //sprintf(buffer,"%d::%s",JOIN_OPCODE,"karthik");
-printf("hellooooooooooooooooooo  %s helooooooooooo",buffer);
+//printf("hellooooooooooooooooooo  %s helooooooooooo",buffer);
 //update_table(hb_entry1);
 
 //printf("\n%s\n",hb_entry1[0].IP);
@@ -292,7 +370,20 @@ initialize_table();
 //printf("i am here\n");
 //buffer=create_message();
 //printf("%s",buffer);
-
+char buffer[500];
 update_table(hb_entry1);
+while(1)
+{
+sleep(1);
+//char *buffer = (char *)malloc(300);
+update_my_heartbeat();
+create_message(buffer);
 print_table(hb_table);
+printf("\n%s\n",buffer);
+memset(buffer,0,500);
+//free(buffer);
+}
+//char *buffer = (char *)malloc(300);
+//create_message(buffer);
+//printf("\n%s\n",buffer);
 }
