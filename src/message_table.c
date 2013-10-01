@@ -47,13 +47,16 @@ void clear_temp_entry_table()
 
 void update_my_entry()
 {
+  pthread_mutex_lock(&table_mutex);
   hb_table[host_no].hb_count++;
+  pthread_mutex_unlock(&table_mutex);
 }
 
 void check_table_for_failed_hosts()
 {
   int i;
   struct timeval timer;
+  pthread_mutex_lock(&table_mutex);
   for(i=0;i<MAX_HOSTS;i++){
        if(hb_table[i].valid==1){
                 gettimeofday(&timer,NULL);
@@ -64,20 +67,24 @@ void check_table_for_failed_hosts()
                 }
        }
   }
+  pthread_mutex_unlock(&table_mutex);
 }
 void periodic_heartbeat_update()
 {
+  pthread_mutex_lock(&table_mutex);
   while(1){
-       sleep(1);
+       sleep(HEART_BEAT_UPDATE_SEC);
        update_my_entry();
        check_table_for_failed_hosts();
   }
+  pthread_mutex_unlock(&table_mutex);
 }        
   
 
 void initialize_table()
 {
   int i=0;
+  pthread_mutex_lock(&table_mutex);
   for(i=0;i<MAX_HOSTS;i++)
     {
       if(i!=host_no)
@@ -97,16 +104,19 @@ void initialize_table()
          hb_table[i].status=1;
       }
     }
+  pthread_mutex_unlock(&table_mutex);
 }    
 char* create_message()
 {
    int i;
-   char msg[sizeof(struct hb_entry)+30];
+   char msg[200];
    char *buffer=(char *)malloc((4*sizeof(struct hb_entry))+50);
+   pthread_mutex_lock(&table_mutex);
    for(i=0;i<MAX_HOSTS;i++){
        sprintf(msg,"%d:%s:%s:%s:%d:%s:%d;",hb_table[i].valid,hb_table[i].host_id,hb_table[i].IP,hb_table[i].port,hb_table[i].hb_count,hb_table[i].time_stamp,hb_table[i].status);
        strcat(buffer,msg);
    }     
+   pthread_mutex_unlock(&table_mutex);
    return buffer;
 }
 
@@ -114,16 +124,19 @@ void print_table(struct hb_entry *table)
 {
    int i=0;
    printf("\n valid\t::\thost_id\t\t::\tIP\t\t::\tPORT\t::\tHB_COUNT\t::\tTIME STAMP\t::\tSTATUS\n");
+   pthread_mutex_lock(&table_mutex);
    for(i=0;i<MAX_HOSTS;i++){
    if(table[i].valid){ 
    printf("%d\t::\t%s\t::\t%s\t::\t%s\t::\t%d\t\t::\t%s\t\t::\t%d\n",table[i].valid,table[i].host_id,table[i].IP,table[i].port,table[i].hb_count,table[i].time_stamp,table[i].status);
     }
    }
+   pthread_mutex_unlock(&table_mutex);
 }
 
 void update_table(struct hb_entry *msg_table)
 { 
   int i=0;
+  pthread_mutex_lock(&table_mutex);
   for(i=0;i<4;i++){
        if(msg_table[i].valid){
               if(msg_table[i].hb_count > hb_table[i].hb_count){
@@ -152,6 +165,7 @@ void update_table(struct hb_entry *msg_table)
               }
        }
   }
+  pthread_mutex_unlock(&table_mutex);
 }
 
 
@@ -233,6 +247,7 @@ int choose_two_hosts(struct two_hosts* ptr)
   int nbr_host = (host_no+1)%MAX_HOSTS;
   int i=0;
   int count=0;
+  pthread_mutex_lock(&table_mutex);
   for(i=0;i<MAX_HOSTS-1;i++){
        if(hb_table[nbr_host].valid){
                  ptr[count].host_id = nbr_host;
@@ -242,6 +257,7 @@ int choose_two_hosts(struct two_hosts* ptr)
        }
        nbr_host=(nbr_host+1)%MAX_HOSTS; 
   }
+  pthread_mutex_unlock(&table_mutex);
  return count;             
 }  
 
