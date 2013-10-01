@@ -473,25 +473,6 @@ int main(int argc, char *argv[])
         rc = ERROR;
         goto rtn;
     }
-    
-    
-    /*
-     * Create threads:
-     */
-    for ( counter = 0; counter < NUM_OF_THREADS; counter++ )
-    {
-        i_rc = pthread_create(&threadID[counter], NULL, startKelsa, (void *) isLeader);
-        if ( SUCCESS != i_rc )
-        {
-            printf("\npthread creation failure\n");
-            printf("\nError ret code: %d, errno: %d\n", i_rc, errno);
-            printf("\nExiting.... ... .. . . .\n");
-            rc = ERROR;
-            goto rtn;
-        } 
-    }
-    
-      
 
 
   rtn:
