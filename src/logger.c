@@ -109,6 +109,59 @@ int logFileClose(FILE *fp)
 
 } // End of logFileClose()
 
+/*****************************************************************
+ * NAME: funcEntry 
+ *
+ * DESCRIPTION: Logs function entry 
+ *              
+ * PARAMETERS: 
+ *            (FILE *) fp - file pointer
+ *            (char *) keyMsg - ipAddress 
+ *            (char *) valueMsg - funcName 
+ * 
+ * RETURN:
+ * (int) ZERO if success
+ *       ERROR otherwise
+ * 
+ ****************************************************************/
+int funcEntry(FILE *fp, char *keyMsg, char *funcName)
+{
+
+    int rc = SUCCESS;        // Return code
+
+    fprintf(fp, "%s : ENTRY - %s", keyMsg, funcName);
+
+  rtn:
+    return rc;
+} // End of funcEntry()
+
+/*****************************************************************
+ * NAME: funcExit
+ *
+ * DESCRIPTION: Logs function exit 
+ *              
+ * PARAMETERS: 
+ *            (FILE *) fp - file pointer
+ *            (char *) keyMsg - ipAddress 
+ *            (char *) valueMsg - funcName 
+ *            (int) f_rc - return code of function
+ * 
+ * RETURN:
+ * (int) ZERO if success
+ *       ERROR otherwise
+ * 
+ ****************************************************************/
+int funcExit(FILE *fp, char *keyMsg, char *funcName, int f_rc)
+{
+
+    int rc = SUCCESS;        // Return code
+
+    fprintf(fp, "%s : EXIT - %s with exit rc = %d", keyMsg, funcName, f_rc);
+
+  rtn:
+    return rc;
+} // End of funcExit()
+
 /*
  * End
  */
