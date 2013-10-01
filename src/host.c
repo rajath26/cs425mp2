@@ -48,6 +48,8 @@
 int CLA_checker(int argc, char *argv[])
 {
 
+    funcEntry(log, ipAddress, "CLA_checker");
+
     int rc = SUCCESS;        // Return code
 
     if ( argc != NUM_OF_CL_ARGS )
@@ -59,6 +61,7 @@ int CLA_checker(int argc, char *argv[])
     }
     
   rtn:
+    funcExit(log, ipAddress, "CLA_checker", rc);
     return rc;
 
 } // End of CLA_checker()
@@ -81,6 +84,8 @@ int CLA_checker(int argc, char *argv[])
 int setUpUDP(char * portNo, char * ipAddress)
 {
 
+    funcEntry(log, ipAddress, "setUpUDP");
+    
     int rc = SUCCESS;
  
     // Create a socket
@@ -91,8 +96,11 @@ int setUpUDP(char * portNo, char * ipAddress)
         printf("\nError number: %d\n", errno);
         printf("\nExiting.... ... .. . . .\n");
         perror("socket");
+        printToLog(log, ipAddress, "socket() failure");
         rc = ERROR;
     }
+  
+    printToLog(log, ipAddress, "socket() successful");
 
     memset(&hostAddress, 0, sizeof(struct sockaddr_in));
     hostAddress.sin_family = AF_INET;
@@ -108,29 +116,226 @@ int setUpUDP(char * portNo, char * ipAddress)
         printf("\nError number: %d\n", errno);
         printf("\nExiting.... ... .. . . .\n");
         perror("bind");
+        printToLog(log, ipAddress, "bind() failure");
         rc = ERROR;
      }
 
+     printToLog(log, ipAddress, "bind() successful");
+
   rtn:
+    funcExit(log, ipAddress, "setUpUDP", rc);
     return rc;
 
 } // End of setUpUDP()
 
 /*****************************************************************
- * NAME: approverMemberHosts 
+ * NAME: requestMembershipToLeader 
  *
- * DESCRIPTION: This function is designed to create a UDP and 
- *              bind to the port 
+ * DESCRIPTION: This function is designed to let member host 
+ *              request leader node membership to Daisy 
+ *              distributed system
  *              
  * PARAMETERS: 
- *            (char *) portNo: port number
- *            (char *) ipAddress: IP Address
+ *            (char *) leaderPort: leader port number
+ *            (char *) leaderIp: leader IP Address
  * 
  * RETURN:
  * (int) ZERO if success
  *       ERROR otherwise
  * 
  ****************************************************************/
+int requestMembershipToLeader(char *leaderPort, char *leaderIp)
+{
+
+    funcEntry(log, ipAddress, "requestMembershipToLeader");
+
+    int rc = SUCCESS,                            // Return code 
+        i_rc,                                    // Temp RC
+        numOfBytesSent; 
+
+    char joinMessage[MED_BUF_SZ],                // Buffer
+         joinOperation[SMALL_BUF_SZ] = "JOIN$",  // Join prefix
+         tableMessage[LONG_BUF_SZ];              // Table msg
+
+    /*
+     * Construct join message
+     */
+    printToLog(log, ipAddress, "Message to be sent leader node is:");
+    i_rc = create_message(tableMessage);
+    sprintf(joinMessage, "%s%s", joinOperation, tableMessage);
+    printToLog(log, ipAddress, joinMessage);
+    printToLog(log, ipAddress, "Sending message to leader node");
+    numOfBytesSent = sendUDP(leaderPort, leaderIp, joinMessage);
+    sprintf(logMsg, "Num of bytes of join msg sent to leader: %d", numOfBytesSent);
+    printToLog(log, ipAddress, logMsg);
+    // If number of bytes sent is 0
+    if ( SUCCESS == numOfBytesSent)
+    {
+        rc = ERROR; 
+        goto rtn;
+    }
+    printToLog(log, ipAddress, "Join message sent successfully");
+
+  rtn:
+    funcExit(log, ipAddress, "requestMembershipToLeader", rc);
+    return rc;
+
+} // End of requestMembershipToLeader()
+
+/*****************************************************************
+ * NAME: CLI_UI 
+ *
+ * DESCRIPTION: This function is designed to display CLI UI for 
+ *              member hosts
+ *              
+ * PARAMETERS: NONE
+ * 
+ * RETURN:
+ * (int) ZERO if success
+ *       ERROR otherwise
+ * 
+ ****************************************************************/
+int CLI_UI()
+{
+
+    funcEntry(log, ipAddress, "CLI_UI");
+
+    int rc = SUCCESS;                    // Return code
+
+    char leaderIpAddress[SMALL_BUF_SZ],  // Buffer to hold leader ip
+         leaderPortNo[SMALL_BUF_SZ];     // Buffer to hold leader port no
+    
+    printf("\n");
+    printf("\t\t***********************************************************\n");
+    printf("\t\t***********************************************************\n");
+    printf("\t\tI am a Member host wanting to join Daisy distributed system\n"0);
+    printf("\t\t***********************************************************\n");
+    printf("\t\t***********************************************************\n");
+    printf("\n\t\tInput the IP address of the Leader node:\n");
+    scanf("%s", &leaderIpAddress);
+    printf("\n\t\tInput the Port No of the Laeder node:\n");
+    scanf("%s", &leaderPortNo);
+    sprintf(logMsg, "Trying to join %s at %s", leaderIpAddress, leaderPortNo);
+    printToLog(log, ipAddress, logMsg);
+    i_rc = requestMembershipToLeader(leaderPortNo, leaderIpAddress);
+    if ( i_rc != SUCCESS )
+    {
+        rc = ERROR;
+        goto rtn;
+    }
+  
+  rtn:
+    funcExit(log, ipAddress, "CLI_UI", rc);
+    return rc;
+
+} // End of CLI_UI()
+
+/*****************************************************************
+ * NAME: spawnHelperThreads 
+ *
+ * DESCRIPTION: This function spawns helper threads 
+ *              
+ * PARAMETERS: NONE
+ * 
+ * RETURN:
+ * (int) ZERO if success
+ *       ERROR otherwise
+ * 
+ ****************************************************************/
+int spawnHelperThreads()
+{
+   
+    funcEntry(log, ipAddress, "spawnHelperThreads");
+
+    int rc = SUCCESS,       // Return code
+        i_rc,               // Temp RC
+        threadNum = 0,      // Thread counter
+        *ptr;               // Pointer to thread counter
+    
+    register int counter;   // Counter variable
+
+    ptr = (int *) malloc(sizeof(int));
+
+    /*
+     * Create threads:
+     */
+    for ( counter = 0; counter < NUM_OF_THREADS; counter++ )
+    {
+        *ptr = threadNum;
+        i_rc = pthread_create(&threadID[counter], NULL, startKelsa, (void *) ptr); 
+        if ( SUCCESS != i_rc )
+        {
+            printf("\npthread creation failure\n");
+            printf("\nError ret code: %d, errno: %d\n", i_rc, errno);
+            printf("\nExiting.... ... .. . . .\n");
+            rc = ERROR;
+            printToLog(log, ipAddress, "pthread() failure");
+            goto rtn;
+        }
+        printToLog(log, ipAddress, "pthread() success");
+        threadNum++;
+    }
+
+  rtn:
+    funcExit(log, ipAddress, "spawnHelperThreads", rc);
+    return rc;
+} // End of spawnHelperThreads();
+
+/****************************************************************
+ * NAME: startKelsa 
+ *
+ * DESCRIPTION: This is the pthread function 
+ *              
+ * PARAMETERS: 
+ * (void *) threadNum - thread counter
+ *
+ * RETURN:
+ * (int) ZERO if success
+ *       ERROR otherwise
+ * 
+ ****************************************************************/
+void * startKelsa(void *threadNum)
+{
+
+    funcEntry(log, ipAddress, "startKelsa");
+
+    int rc = SUCCESS,                 // Return code
+        i_rc,                         // Temp RC
+        *counter = (int *)threadNum;  // Thread counter
+
+    switch(*counter)
+    {
+        case 1:
+        // First thread calls receiver function that does:
+        // i) Approve join requests if LEADER
+        // ii) Receive heartbeats
+        i_rc = receiverFunc(); 
+        break;
+
+        case 2:
+        // Second thread calls sender function that does:
+        // i) Sends heartbeats
+        i_rc = sendFunc();
+        break;
+
+        case 3:
+        // Third thread calls heartbeat checker function that:
+        // i) checks heartbeat table
+        i_rc = heartBeatCheckerFunc();
+        break;
+
+        default:
+        // Can't get here if we do then exit
+        printToLog(log, ipAddress, "default case. An error");
+        rc = ERROR;
+        goto rtn;
+        break;
+    } // End of switch
+
+  rtn:
+    funcExit(log, ipAddress, "startKelsa", rc);
+    return rc;
+}
 
 /*
  * Main function
@@ -163,21 +368,24 @@ int setUpUDP(char * portNo, char * ipAddress)
 int main(int argc, char *argv[])
 {
 
-    int rc       = SUCCESS,        // Return code
-        i_rc,                      // Intermittent return code
-        udp;                       // Socket descriptor
+    int rc = SUCCESS,              // Return code
+        i_rc;                            // Intermittent return code
         
-    register int counter;          // Counter variable 
+    char leaderIpAddress[SMALL_BUF_SZ],  // Buffer to hold leader ip
+         leaderPortNo[SMALL_BUF_SZ];     // Buffer to hold leader port no
 
-    bool isLeader = FALSE;         // Bool variable
+    pthread_t threadID[NUM_OF_THREADS];  // Helper threads
 
-    char ipAddress[SMALL_BUF_SZ],  // Buffer to hold ip 
-         portNo[SMALL_BUF_SZ];     // Buffer to hold port no
+    /*
+     * Init log file 
+     */
+    i_rc = logFileCreate(log);
+    if ( i_rc != SUCCESS )
+    {
+         printf("\nLog file won't be created. There was an error\n");
+    }
 
-    FILE *log;                     // File pointer to log 
-                    
-    pthread_t approverThread,              // Approver thread
-              threadID[NUM_OF_THREADS];    // Helper threads
+    funcEntry(log, ipAddress, "host::main");
 
     /*
      * Command line arguments check
@@ -190,15 +398,8 @@ int main(int argc, char *argv[])
     }
        
     /*
-     * Init log file 
+     * Copy ip address and port no to local buffer
      */
-    i_rc = logFileCreate(log);
-    if ( i_rc != SUCCESS )
-    {
-         printf("\nLog file won't be created. There was an error\n");
-    }
-
-    // Copy ip address and port no to local buffer
     memset(ipAddress, '\0', SMALL_BUF_SZ);
     sprintf(ipAddress, "%s", argv[2]);
     memset(portNo, '\0', SNALL_BUF_SZ);
@@ -208,6 +409,7 @@ int main(int argc, char *argv[])
      * Init local host heart beat table
      */
     initialize_table();
+    printToLog(log, ipAddress, "Initialized my table");
 
     /* 
      * Get the node type based on third argument. By default it
@@ -216,6 +418,11 @@ int main(int argc, char *argv[])
     if ( SUCCESS == strcmp(argv[3], LEADER_STRING) )
     {
         isLeader = TRUE;
+        printToLog(log, ipAddress, "I am the leader node");
+    }
+    else 
+    {
+        printToLog(log, ipAddress, "I am a member node");
     }
 
     /* 
@@ -225,38 +432,47 @@ int main(int argc, char *argv[])
     if ( i_rc != SUCCESS )
     {
         rc = ERROR;
+        printfToLog(log, ipAddress, "UDP setup failure");
         goto rtn;
     }
 
+    // Log current status 
+    printToLog(log, ipAddress, "UDP setup successfully");
+
     /*
-     * If this host is a leader spawn a thread that acts as an 
-     * approver for other member hosts
-     */ 
+     * If current host is a LEADER then log that this host has
+     * joined the distributed system
+     */
     if ( isLeader )
     {
-        i_rc = pthread_create(&approverThread, NULL, approverMemberHosts, NULL);
+        printToLog(log, "I, THE LEADER have joined the Daisy Distributed System");
+    }
+
+    /*
+     * Display the CLI UI if this host is a MEMBER host which 
+     * asks member if he wants to send join message to leader node
+     * and calls the function requestMembershipToLeader() which
+     * does the job
+     */
+    if ( !isLeader )
+    {
+        i_rc = CLI_UI();
         if ( i_rc != SUCCESS )
         {
-            printf("\nThread creation failed\n");
-            printf("\nError Number: %d\n", errno);
-            perror("pthread_create");
-            printf("\nExiting.... ... .. .\n");
             rc = ERROR;
             goto rtn;
         }
     }
 
-    // If the current host is a LEADER then log that this host
-    // has joined the distributed system
-    // NOTE:- In all calls to printToLog return code is not 
-    //        checked. It is assumed that it is always successful
-    //        and logFileCreate was successful too
-    if ( isLeader )
+    /*
+     * Spawn the helper threads
+     */
+    i_rc = spawnHelperThreads();
+    if ( i_rc != SUCCESS )
     {
-        printToLog(log, ipAddress, "I have joined the distributed system");
+        rc = ERROR;
+        goto rtn;
     }
-    else 
-    {
     
     
     /*
@@ -279,6 +495,11 @@ int main(int argc, char *argv[])
 
 
   rtn:
+    funcExit(log, ipAddress, "Host::main", rc);
+    /*
+     * Close the log
+     */ 
+    logFileClose(log);
     return rc;
 
 } // End of main

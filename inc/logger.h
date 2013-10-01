@@ -44,7 +44,17 @@ int printToLog(
 int logFileClose(
                  FILE *fp         // File pointer 
                 );
-void *approverMemberHosts();
+int funcEntry(
+              FILE *fp,           // File pointer, 
+              char *keyMessage,   // Key
+              char *valueMessage  // Value
+             );
+int funcExit(
+             FILE *fp,           // File pointer, 
+             char *keyMessage,   // Key
+             char *valueMessage, // Value
+             int f_rc            // Function RC
+             );
 
 /*
  * End 
