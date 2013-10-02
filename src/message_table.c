@@ -115,6 +115,35 @@ void periodic_heartbeat_update()
 }        
 */  
 
+
+int network_to_host(char *message)
+{
+   int i;
+   int len_str;
+   int div = sizeof(int);
+   len_str = strlen(message);
+   int residual = len_str % div;
+   int *ptr;
+   ptr=(int *)message;
+   for(i=0;i<len_str/4;i++){
+     *ptr=htonl(*ptr);
+     ptr++;
+   }
+}
+int host_to_network(char *message)
+{
+   int i;
+   int len_str;
+   int div = sizeof(int);
+   len_str=strlen(message);
+   int *ptr;
+   ptr=(int *)message;
+   for(i=0;i<len_str/4;i++){
+     *ptr= ntohl(*ptr);
+      ptr++;
+   }
+}
+
 int initialize_table()
 {
   int i=0;
@@ -375,13 +404,19 @@ initialize_table();
 char buffer[500];
 memset(buffer,0,500);
 update_table(hb_entry1);
-while(1)
+//while(1)
 {
 sleep(1);
 //char *buffer = (char *)malloc(300);
 //update_my_heartbeat();
 check_table_for_failed_hosts();
 create_message(buffer);
+printf("\nbefore conversion %s\n",buffer);
+
+network_to_host(buffer);
+printf("\nnetwork to host : %s\n",buffer);
+host_to_network(buffer);
+printf("\nhost to network : %s\n",buffer);
 print_table(hb_table);
 check_table_for_failed_hosts();
 printf("\n%s\n",buffer);
