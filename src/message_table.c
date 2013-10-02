@@ -115,7 +115,7 @@ void periodic_heartbeat_update()
 }        
 */  
 
-
+//network to host and host to network functionality added
 int network_to_host(char *message)
 {
    int i;
