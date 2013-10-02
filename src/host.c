@@ -303,24 +303,35 @@ void * startKelsa(void *threadNum)
         i_rc,                         // Temp RC
         *counter = (int *)threadNum;  // Thread counter
 
+    pthread_t tid = pthread_self();   // Thread ID
+
+    sprintf(logMsg, "This is thread with counter: %d and thread ID: %u", counter, tid);
+    printToLog(log, ipAddress, logMsg);
+
     switch(*counter)
     {
         case 1:
         // First thread calls receiver function that does:
         // i) Approve join requests if LEADER
         // ii) Receive heartbeats
+        strcat(logMsg, "executing receiverFunc");
+        printToLog(log, ipAddress, logMsg);
         i_rc = receiverFunc(); 
         break;
 
         case 2:
         // Second thread calls sender function that does:
         // i) Sends heartbeats
+        strcat(logMsg, "executing senFunc");
+        printToLog(log, ipAddress, logMsg);
         i_rc = sendFunc();
         break;
 
         case 3:
         // Third thread calls heartbeat checker function that:
         // i) checks heartbeat table
+        strcat(logMsg, "executing heartBeatCheckerFunc");
+        printToLog(log, ipAddress, logMsg);
         i_rc = heartBeatCheckerFunc();
         break;
 
@@ -336,6 +347,298 @@ void * startKelsa(void *threadNum)
     funcExit(log, ipAddress, "startKelsa", rc);
     return rc;
 }
+
+/****************************************************************
+ * NAME: receiverFunc 
+ *
+ * DESCRIPTION: This is the function that takes care of servicing
+ *              the first among the three threads spawned i.e.
+ *              the receiver threads which does the following:
+ *              i) If I am a LEADER approve join requests from 
+ *                 member hosts
+ *              ii) Receive heartbeats
+ *              
+ * PARAMETERS: NONE 
+ *
+ * RETURN:
+ * (int) ZERO if success
+ *       ERROR otherwise
+ * 
+ ****************************************************************/
+int receiverFunc()
+{
+
+    funcEntry(log, ipAddress, "receiverFunc");
+
+    int rc = SUCCESS,                    // Return code
+        numOfBytesRec,                   // Number of bytes received
+        i_rc,                            // Temp RC
+        op_code;                         // Operation code
+
+    char recMsg[LONG_BUF_SZ],            // Received message
+         tokenRecMsg[LONG_BUF_SZ];       // Received message without join op code 
+
+    struct sockaddr_in memberAddress;    // Address of host 
+ 
+    socklen_t length;                    // Length
+
+    struct hb_entry * recMsgStruct;      // Heart beat table that holds received message
+
+    recMsgStruct = (struct hb_entry *) malloc(sizeof(struct hb_entry));
+
+    /*
+     * 1) Receive UDP packet
+     * 2) Check operation code
+     * 3) If JOIN message: 
+     *    i) Extract message
+     *    ii) Update heartbeat table
+     * 4) Else
+     *    i) Extract message 
+     *    ii) Update heartbeat table
+     */
+
+    for(;;)
+    {
+        length = sizeof(memberAddress);
+        /////////
+        // Step 1
+        /////////
+        numOfBytesRec = recvUDP(recMsg, LONG_BUF_SZ, (struct sockaddr *) hostAddress, &length);
+        // Check if 0 bytes is received 
+        if ( SUCCESS == numOfBytesRec )
+        {
+             sprintf(logMsg, "Number of bytes received is ZERO = %d", numOfBytesRec);
+             printf("\n%s\n", logMsg);
+             printToLog(log, ipAddress, logMsg);
+             continue;
+        }
+        /////////
+        // Step 2
+        /////////
+        i_rc = checkOperationCode(recMsg, op_code, tokenRecMsg);
+        if ( i_rc != SUCCESS ) 
+        {
+            printToLog(log, ipAddress, "Unable to retrieve opcode");
+            continue;
+        }
+        /////////
+        // Step 3
+        /////////
+        if ( JOIN_OP_CODE == op_code )
+        {
+            ///////////
+            // Step 3i
+            ///////////
+            recMsgStruct = extract_message(tokenRecMsg);
+            if ( NULL == recMsgStruct )
+            {
+                printToLog(log, ipAddress, "Unable to extract message");
+                continue;
+            }
+            ////////////
+            // Step 3ii
+            ////////////
+            i_rc = update_table(recMsgStruct);
+            if ( i_rc != SUCCESS )
+            {
+                 printToLog(log, ipAddress, "Unable to update heart beat table");
+                 continue;
+            }
+        } // End of if ( JOIN_OP_CODE == op_code )
+        /////////
+        // Step 4
+        /////////
+        else
+        {
+            //////////
+            // Step 4i
+            //////////
+            recMsgStruct = extract_message(recMsg);
+            if ( NULL == recMsgStruct )
+            {
+                printToLog(log, ipAddress, "Unable to extract message");
+                continue;
+            }
+            ///////////
+            // Step 4ii
+            ///////////
+            i_rc = update_table(recMsgStruct);
+            if ( i_rc != SUCCESS )
+            {
+                 printToLog(log, ipAddress, "Unable to update heart beat table");
+                 continue;
+            }
+        } // End of else
+    } // End of for(;;)
+
+  rtn:
+    funcExit(log, ipAddress, "receiverFunc", rc);
+    return rc;
+
+} // End of receiverFunc()
+
+/****************************************************************
+ * NAME: checkOperationCode 
+ *
+ * DESCRIPTION: This is the function checks the passed in message
+ *              and determines if it is a JOIN message or not
+ *              
+ * PARAMETERS: 
+ * (char *) recMsg - received message
+ * (int) op_code - pass by reference back to calling function
+ *                 JOIN_OP_CODE if JOIN message else 
+ *                 RECEIVE_HB_OP_CODE
+ * (char *) tokenRecMsg - pass by reference back to calling 
+ *                        function if JOIN_OP_CODE. Message with
+ *                        JOIN OP CODE removed
+ *
+ * RETURN:
+ * (int) ZERO if success
+ *       ERROR otherwise
+ * 
+ ****************************************************************/
+int checkOperationCode(char *recMsg, int op_code, char *tokenRecMsg)
+{
+
+    funcEntry(log, ipAddress, "checkOperationCode");
+    
+    int rc = SUCCESS;        // Return code
+ 
+    char *token,             // Token
+         joinDel = '$';      // JOIN message delimiter
+ 
+    token = strtok(recMsg, joinDel);
+
+    if ( NULL != token ) 
+    {
+        printToLog(log, ipAddress, "JOIN Op");
+        op_code = JOIN_OP_CODE;
+        token = strtok(NULL, joinDel); 
+        strcpy(tokenRecMsg, token);
+        printToLog(log, ipAddress, tokenRecMsg);
+    }
+    else
+    {
+        op_code = RECEIVE_HB_CODE;
+        printToLog(log, ipAddress, "RECEIVE HB Op");
+        printToLog(log, ipAddress, recMsg);
+    }
+    
+  rtn:
+    funcExit(log, ipAddress, "checkOperationCode", rc);
+    return rc;
+
+} // End of checkOperationCode()
+
+/****************************************************************
+ * NAME: sendFunc 
+ *
+ * DESCRIPTION: This is the function that takes care of sending
+ *              heartbeats 
+ *              
+ * PARAMETERS: NONE 
+ *
+ * RETURN:
+ * (int) ZERO if success
+ *       ERROR otherwise
+ * 
+ ****************************************************************/
+int sendFunc()
+{
+
+    funcEntry(log, ipAddress, "sendFunc");
+
+    int rc = SUCCESS,                      // Return code
+        num_of_hosts_chosen,               // Number of hosts chosen 
+        i_rc,                              // Temp RC
+        numOfBytesSent;                    // Number of bytes sent
+
+    register int counter;                  // Counter
+
+    char msgToSend[LONG_BUF_SZ];           // Message to be sent
+
+    struct two_hosts hosts[GOSSIP_HOSTS],  // An array of two_hosts
+           *ptr;                           // Pointer to above
+ 
+    struct sockaddr_in hostAddress;        // Address of host to send HB
+ 
+    ptr = hosts;
+
+    num_of_hosts_chosen = choose_n_hosts(ptr, GOSSIP_HOSTS);
+
+    sprintf(logMsg, "Number of hosts chosen to gossip: %d", num_of_hosts_chosen);
+    printToLog(log, ipAddress, logMsg);
+
+    for ( counter = 0; counter < num_of_hosts_chosen; counter++ )
+    {
+        // Init chosen host address
+        memset(&hostAddress, 0, sizeof(struct sockaddr_in));
+        hostAddress.sin_family = AF_INET;
+        hostAddress.sin_port = htons(hb_entry[hosts[counter].host_id].port);
+        hostAddress.sin_addr.s_addr = inet_addr(hb_entry[hosts[counter].host_id].IP);
+        memset(&(hostAddress.sin_zero), '\0', 8);
+        
+        // create message
+        i_rc = create_message(msgToSend);
+        if ( SUCCESS != i_rc )
+        {
+            printToLog(log, ipAddress, "Unable to create message");
+            continue;
+        }
+
+        // Send UDP packets
+        numOfBytesSent = sendUDP(msgToSend, strlen(msgToSend), (struct sockaddr *) &hostAddress, sizeof(struct sockaddr));
+        // check if 0 bytes is sent
+        if ( SUCCESS == numOfBytesSent )
+        {
+            printToLog(log, ipAddress, "ZERO bytes sent");
+            continue;
+        }
+    } // End of for ( counter = 0; counter < num_of_hosts_chosen; counter++ )
+    
+  rtn:
+    funcExit(log, ipAddress, "sendFunc" rc);
+    return rc;
+
+} // End of sendFunc() 
+
+/****************************************************************
+ * NAME: heartBeatChecker 
+ *
+ * DESCRIPTION: This is the function that takes care of checking 
+ *              heartbeats
+ *              
+ * PARAMETERS: NONE 
+ *
+ * RETURN:
+ * (int) ZERO if success
+ *       ERROR otherwise
+ * 
+ ****************************************************************/
+int heartBeatChecker()
+{
+
+    funcEntry(log, ipAddress, "heartBeatChecker");
+
+    int rc = SUCCESS,        // Return code
+        i_rc;                // temp RC
+
+    for(;;)
+    {
+        i_rc = periodic_heartbeat_update();
+        if ( i_rc != SUCCESS )
+        {
+            printToLog(log, ipAddress, "periodic_heartbeat_update failed");
+            continue;
+        }
+    }
+
+  rtn:
+    funcExit(log, ipAddress, "heartBeatChecker", rc);
+    return rc;
+
+} // End of heartBeatChecker()
+
 
 /*
  * Main function

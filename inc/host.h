@@ -40,14 +40,17 @@
 /*
  * Macros
  */
-#define SUCCESS        0
-#define ERROR          -1
-#define NUM_OF_CL_ARGS 4 
-#define LEADER         7
-#define MEMBER         8
-#define NUM_OF_THREADS 3 
-#define LEADER_STRING  "leader"
-#define MEMBER_STRING  "member"
+#define SUCCESS            0
+#define ERROR              -1
+#define NUM_OF_CL_ARGS     4 
+#define LEADER             7
+#define MEMBER             8
+#define NUM_OF_THREADS     3 
+#define JOIN_OP_CODE       9
+#define RECEIVE_HB_OP_CODE 8
+#define GOSSIP_HOSTS       2
+#define LEADER_STRING      "leader"
+#define MEMBER_STRING      "member"
 
 /*
  * Global variables
@@ -75,6 +78,13 @@ int requestMembershipToLeader(
 int CLI_UI();
 int spawnHelperThreads();
 void * startKelsa(void *);
+int receiverFunc();
+int sendFunc();
+int heartBeatCheckerFunc();
+int checkOperationCode(
+                       char * recMsg,    // Received message
+                       int op_code       // Returned op code
+                      );
 
 /*
  * End 
