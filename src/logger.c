@@ -50,8 +50,7 @@ int logFileCreate(FILE *fp)
         printf("\nUnable to open log file in write mode\n");
         rc = ERROR;
         goto rtn;
-    }
-   
+    }   
   rtn:
     return rc;
  

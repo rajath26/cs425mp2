@@ -384,7 +384,7 @@ int receiverFunc()
 
     struct hb_entry * recMsgStruct;      // Heart beat table that holds received message
 
-    recMsgStruct = (struct hb_entry *) malloc(sizeof(struct hb_entry));
+    recMsgStruct = (struct hb_entry *) malloc(4*sizeof(struct hb_entry));
 
     /*
      * 1) Receive UDP packet
@@ -431,6 +431,7 @@ int receiverFunc()
             ///////////
             // Step 3i
             ///////////
+            clear_temp_entry_table(recMsgStruct);
             recMsgStruct = extract_message(tokenRecMsg);
             if ( NULL == recMsgStruct )
             {
@@ -455,6 +456,7 @@ int receiverFunc()
             //////////
             // Step 4i
             //////////
+            clear_temp_entry_table(recMsgStruct);
             recMsgStruct = extract_message(recMsg);
             if ( NULL == recMsgStruct )
             {
@@ -569,7 +571,8 @@ int sendFunc()
     */
  
     ptr = hosts;
-
+    
+    initialize_two_hosts(ptr);
     num_of_hosts_chosen = choose_n_hosts(ptr, GOSSIP_HOSTS);
 
     sprintf(logMsg, "Number of hosts chosen to gossip: %d", num_of_hosts_chosen);
