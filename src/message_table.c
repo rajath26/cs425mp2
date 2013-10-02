@@ -125,7 +125,7 @@ int network_to_host(char *message)
    int residual = len_str % div;
    int *ptr;
    ptr=(int *)message;
-   for(i=0;i<len_str/4;i++){
+   for(i=0;i<=len_str/4;i++){
      *ptr=htonl(*ptr);
      ptr++;
    }
@@ -138,7 +138,7 @@ int host_to_network(char *message)
    len_str=strlen(message);
    int *ptr;
    ptr=(int *)message;
-   for(i=0;i<len_str/4;i++){
+   for(i=0;i<=len_str/4;i++){
      *ptr= ntohl(*ptr);
       ptr++;
    }
