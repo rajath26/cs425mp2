@@ -403,7 +403,7 @@ int receiverFunc()
         /////////
         // Step 1
         /////////
-        numOfBytesRec = recvUDP(recMsg, LONG_BUF_SZ, (struct sockaddr *) hostAddress, &length);
+        numOfBytesRec = recvUDP(recMsg, LONG_BUF_SZ, memberAddress, &length);
         // Check if 0 bytes is received 
         if ( SUCCESS == numOfBytesRec )
         {
@@ -426,6 +426,8 @@ int receiverFunc()
         /////////
         if ( JOIN_OP_CODE == op_code )
         {
+            sprintf(logMsg, "JOIN msg from %s", inet_ntop(AF_INET, &clientAddress.sin_addr, buffer, sizeof(buffer)));
+            printToLog(log, ipAddress, logMsg);
             ///////////
             // Step 3i
             ///////////
@@ -551,16 +553,20 @@ int sendFunc()
     int rc = SUCCESS,                      // Return code
         num_of_hosts_chosen,               // Number of hosts chosen 
         i_rc,                              // Temp RC
-        numOfBytesSent;                    // Number of bytes sent
+        numOfBytesSent,                    // Number of bytes sent
+        portNo;                            // Port no
 
     register int counter;                  // Counter
 
-    char msgToSend[LONG_BUF_SZ];           // Message to be sent
+    char msgToSend[LONG_BUF_SZ],           // Message to be sent
+         ipAddr[SMALL_BUF_SZ];             // IP Address buffer
 
     struct two_hosts hosts[GOSSIP_HOSTS],  // An array of two_hosts
            *ptr;                           // Pointer to above
  
+    /*
     struct sockaddr_in hostAddress;        // Address of host to send HB
+    */
  
     ptr = hosts;
 
@@ -572,12 +578,15 @@ int sendFunc()
     for ( counter = 0; counter < num_of_hosts_chosen; counter++ )
     {
         // Init chosen host address
+        /*
         memset(&hostAddress, 0, sizeof(struct sockaddr_in));
         hostAddress.sin_family = AF_INET;
         hostAddress.sin_port = htons(hb_entry[hosts[counter].host_id].port);
         hostAddress.sin_addr.s_addr = inet_addr(hb_entry[hosts[counter].host_id].IP);
         memset(&(hostAddress.sin_zero), '\0', 8);
-        
+        */
+        portNo = hb_entry[hosts[counter].host_id].port;
+        strcpy(ipAddr, hb_entry[hosts[counter].host_id].IP);
         // create message
         i_rc = create_message(msgToSend);
         if ( SUCCESS != i_rc )
@@ -587,7 +596,7 @@ int sendFunc()
         }
 
         // Send UDP packets
-        numOfBytesSent = sendUDP(msgToSend, strlen(msgToSend), (struct sockaddr *) &hostAddress, sizeof(struct sockaddr));
+        numOfBytesSent = sendUDP(portNo, ipAddr, msgToSend);
         // check if 0 bytes is sent
         if ( SUCCESS == numOfBytesSent )
         {
@@ -623,14 +632,11 @@ int heartBeatChecker()
     int rc = SUCCESS,        // Return code
         i_rc;                // temp RC
 
-    for(;;)
+    i_rc = periodic_heartbeat_update();
+    if ( i_rc != SUCCESS )
     {
-        i_rc = periodic_heartbeat_update();
-        if ( i_rc != SUCCESS )
-        {
-            printToLog(log, ipAddress, "periodic_heartbeat_update failed");
-            continue;
-        }
+        printToLog(log, ipAddress, "periodic_heartbeat_update failed");
+        continue;
     }
 
   rtn:
