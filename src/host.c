@@ -451,8 +451,22 @@ int receiverFunc()
             ///////////
             // Step 3i
             ///////////
+            
+            // Debug. uncomment if req
+            printf("\nBefore clear_temp_entry_table\n"); 
+
             clear_temp_entry_table(recMsgStruct);
+
+            printf("\nAfter c_t_e_t\n");
+
+            printf("\nbefore extract_msg\n");
+
             recMsgStruct = extract_message(tokenRecMsg);
+
+            printf("\nafter e_m\n");
+
+            printf("\nToken Received Message: %s", tokenRecMsg);
+
             if ( NULL == recMsgStruct )
             {
                 printToLog(logF, ipAddress, "Unable to extract message");

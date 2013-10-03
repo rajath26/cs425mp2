@@ -205,7 +205,7 @@ int update_table(struct hb_entry *msg_table)
 { 
   int i=0;
   pthread_mutex_lock(&table_mutex);
-  clear_temp_entry_table(msg_table);
+  //clear_temp_entry_table(msg_table);
   for(i=0;i<MAX_HOSTS;i++){
        if(msg_table[i].valid){
               if(msg_table[i].hb_count > hb_table[i].hb_count){
