@@ -4,8 +4,9 @@
 #include<unistd.h>
 #include"message.h"
 #include"logger.c"
-#define TREMOVE 10
+#define TREMOVE 20
 
+//FILE *log=fopen("log.txt","w");
 /*
 #define UP 1
 #define DOWN 0
@@ -38,13 +39,14 @@ struct hb_entry entry[4];  // this table is used to extract values from the mess
 struct hb_entry hb_table[4];  // this is the heart beat table mantained for a single host
 */
 
+FILE *log1;
 
 int delete_entry_table(int table_index)
 {
    memset(&hb_table[table_index],0,sizeof(struct hb_entry));
    char message[100];
    sprintf(message,"host_entry %d in the hb_table is deleted",table_index);
-   printToLog(fp,hb_table[host_no].host_id,message);
+   printToLog(log1,hb_table[host_no].host_id,message);
    return 0;
 }
 
@@ -52,7 +54,8 @@ int clear_temp_entry_table(struct hb_entry *msg_table)
 {
   int i=0;
   char message[100];
-  printToLog(fp,hb_table[host_no].host_id,"temporary entry is being deleted");
+ // printToLog(log1,hb_table[host_no].host_id,"temporary entry is being deleted");
+  fprintf(log1,message,"%s","deleting your entry");
   for(i=0;i<MAX_HOSTS;i++){
      memset(&msg_table[i],0,sizeof(struct hb_entry));
   }
@@ -85,13 +88,13 @@ int check_table_for_failed_hosts()
                            /*put a logger message*/
                            char message[100];
                            sprintf(message,"Entry %d is being marked DOWN\n",i);
-                           printToLog(fp,hb_table[host_no].host_id,message);
+                           printToLog(log1,hb_table[host_no].host_id,message);
                 }
                 if((timer.tv_sec - cmp_time) >= TREMOVE){
                            delete_entry_table(i);
                            char message[100];
                            sprintf(message,"Entry %d is being removed\n",i);  
-                           printToLog(fp,hb_table[host_no].host_id,message);
+                           printToLog(log1,hb_table[host_no].host_id,message);
                 }
        }
   }
@@ -112,10 +115,39 @@ void periodic_heartbeat_update()
 }        
 */  
 
+//network to host and host to network functionality added
+int network_to_host(char *message)
+{
+   int i;
+   int len_str;
+   int div = sizeof(int);
+   len_str = strlen(message);
+   int residual = len_str % div;
+   int *ptr;
+   ptr=(int *)message;
+   for(i=0;i<=len_str/4;i++){
+     *ptr=htonl(*ptr);
+     ptr++;
+   }
+}
+int host_to_network(char *message)
+{
+   int i;
+   int len_str;
+   int div = sizeof(int);
+   len_str=strlen(message);
+   int *ptr;
+   ptr=(int *)message;
+   for(i=0;i<=len_str/4;i++){
+     *ptr= ntohl(*ptr);
+      ptr++;
+   }
+}
+
 int initialize_table()
 {
   int i=0;
-  printToLog(fp,hb[host_no].host_id,"Initializing gossip table");
+  printToLog(log1,hb_table[host_no].host_id,"Initializing gossip table");
 //  pthread_mutex_lock(&table_mutex);
   for(i=0;i<MAX_HOSTS;i++)
     {
@@ -350,7 +382,7 @@ void main()
 {
 char *ptr=(char *)malloc(200);
 strcpy(ptr,"1:0_1380475981:192.168.100.120:1234:123:0:1;1:1_1234567891:192.123.456.678:123:12345:0:0;0::::0::0;0::::0::0;");
-
+log1=fopen("./log.txt","w");
 struct hb_entry *hb_entry1=extract_message(ptr);
 print_table(hb_entry1);
 
@@ -361,7 +393,6 @@ print_table(hb_entry1);
 
 //printf("\n%s\n",hb_entry1[0].IP);
 //printf("%d\n",hb_entry1[0].valid);
-
 initialize_table();
 //printf("%s\n",hb_table[0].IP);
 //printf("%s\n",hb_table[0].host_id);
@@ -371,14 +402,23 @@ initialize_table();
 //buffer=create_message();
 //printf("%s",buffer);
 char buffer[500];
+memset(buffer,0,500);
 update_table(hb_entry1);
-while(1)
+//while(1)
 {
 sleep(1);
 //char *buffer = (char *)malloc(300);
-update_my_heartbeat();
+//update_my_heartbeat();
+check_table_for_failed_hosts();
 create_message(buffer);
+printf("\nbefore conversion %s\n",buffer);
+
+network_to_host(buffer);
+printf("\nnetwork to host : %s\n",buffer);
+host_to_network(buffer);
+printf("\nhost to network : %s\n",buffer);
 print_table(hb_table);
+check_table_for_failed_hosts();
 printf("\n%s\n",buffer);
 memset(buffer,0,500);
 //free(buffer);
