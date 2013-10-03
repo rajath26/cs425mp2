@@ -144,7 +144,7 @@ int host_to_network(char *message)
    }
 }
 
-int initialize_table()
+int initialize_table(char *port,char *ip,int host_id)
 {
   int i=0;
   printToLog(logF,hb_table[host_no].host_id,"Initializing gossip table");
@@ -158,11 +158,11 @@ int initialize_table()
          struct timeval start;
          gettimeofday(&start,NULL);
          char buffer[70];
-         sprintf(buffer,"%d_%ld",host_no,start.tv_sec);
+         sprintf(buffer,"%d_%ld",host_id,start.tv_sec);
 
          strcpy(hb_table[i].host_id,buffer); // initialize host_id
-         strcpy(hb_table[i].IP,host_ip_address); // initialize ip
-         strcpy(hb_table[i].port,host_port);  // initialize port
+         strcpy(hb_table[i].IP,ip); // initialize ip
+         strcpy(hb_table[i].port,port);  // initialize port
          hb_table[i].hb_count=-1;
          strcpy(hb_table[i].time_stamp,"0");
          hb_table[i].status=1;
@@ -377,10 +377,11 @@ void go_live(char *message)
   sprintf(buffer,"%d#%s",JOIN_OPCODE,message);  
 }
        
+
 /*
 void main()
-{ */
-
+{ 
+*/
 
 /*
 char *ptr=(char *)malloc(200);
