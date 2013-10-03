@@ -31,6 +31,11 @@
 #define SUCCESS           0
 
 /*
+ * Global variables
+ */
+FILE *logF;
+
+/*
  * Function Declarations
  */
 int logFileCreate();

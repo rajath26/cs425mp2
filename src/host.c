@@ -282,7 +282,7 @@ int spawnHelperThreads()
             goto rtn;
         }
         printToLog(logF, ipAddress, "pthread() success");
-        free(ptr);
+        //free(ptr);
     }
 
     for ( counter = 0; counter < NUM_OF_THREADS; counter++ )
@@ -334,7 +334,7 @@ void * startKelsa(void *threadNum)
         // First thread calls receiver function that does:
         // i) Approve join requests if LEADER
         // ii) Receive heartbeats
-        strcat(logMsg, "executing receiverFunc");
+        strcat(logMsg, "\texecuting receiverFunc");
         printToLog(logF, ipAddress, logMsg);
         i_rc = receiverFunc(); 
         break;
@@ -342,7 +342,7 @@ void * startKelsa(void *threadNum)
         case 1:
         // Second thread calls sender function that does:
         // i) Sends heartbeats
-        strcat(logMsg, "executing senFunc");
+        strcat(logMsg, "\texecuting sendFunc");
         printToLog(logF, ipAddress, logMsg);
         i_rc = sendFunc();
         break;
@@ -350,7 +350,7 @@ void * startKelsa(void *threadNum)
         case 2:
         // Third thread calls heartbeat checker function that:
         // i) checks heartbeat table
-        strcat(logMsg, "executing heartBeatCheckerFunc");
+        strcat(logMsg, "\texecuting heartBeatCheckerFunc");
         printToLog(logF, ipAddress, logMsg);
         i_rc = heartBeatCheckerFunc();
         break;
@@ -415,6 +415,9 @@ int receiverFunc()
      *    ii) Update heartbeat table
      */
 
+    // Debug. uncomment if req
+    print_table(hb_table);
+
     for(;;)
     {
         /////////
@@ -464,6 +467,9 @@ int receiverFunc()
                  printToLog(logF, ipAddress, "Unable to update heart beat table");
                  continue;
             }
+
+            // Debug. uncomment if req
+            print_table(hb_table);
         } // End of if ( JOIN_OP_CODE == op_code )
         /////////
         // Step 4
@@ -590,6 +596,9 @@ int sendFunc()
         initialize_two_hosts(ptr);
         num_of_hosts_chosen = choose_n_hosts(ptr, GOSSIP_HOSTS);
 
+        // Debug. uncomment if req
+        print_table(hb_table);
+
         sprintf(logMsg, "Number of hosts chosen to gossip: %d", num_of_hosts_chosen);
         printToLog(logF, ipAddress, logMsg);
 
@@ -640,7 +649,7 @@ int sendFunc()
 int heartBeatCheckerFunc()
 {
 
-    funcEntry(logF, ipAddress, "heartBeatChecker");
+    funcEntry(logF, ipAddress, "heartBeatCheckerFunc");
 
     int rc = SUCCESS;        // Return code
 
@@ -695,13 +704,16 @@ int main(int argc, char *argv[])
     char leaderIpAddress[SMALL_BUF_SZ],  // Buffer to hold leader ip
          leaderPortNo[SMALL_BUF_SZ];     // Buffer to hold leader port no
 
+    // Debug. uncomment if req
+    host_no = 1; 
+
     /*
      * Init log file 
      */
     // Debug. uncomment if req
     printf("\nCreating log\n");
 
-    i_rc = logFileCreate(logF);
+    i_rc = logFileCreate();
     if ( i_rc != SUCCESS )
     {
         printf("\nLog file won't be created. There was an error\n");

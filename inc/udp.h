@@ -32,6 +32,7 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <sys/time.h>
+#include "logger.h"
 
 /*
  * Macros

@@ -54,8 +54,12 @@ int recvUDP(char *buffer, int length, struct sockaddr_in hostAddr)
 
     numOfBytesRec = recvfrom(udp, buffer, length, 0, (struct sockaddr *) &hostAddr, &len);
 
+    // Debug. uncomment if required
+    printf("\nbuffer\n");
+
   rtn:
     funcExit(logF, ipAddress, "recvUDP", numOfBytesRec);
+    return numOfBytesRec;
 
 } // End of recvUDP()
 

@@ -56,7 +56,7 @@
 /*
  * Global variables
  */
-FILE *logF;                            // File pointer to log
+//FILE *logF;                            // File pointer to log
 int udp;                               // UDP socket descriptor
 struct sockaddr_in hostAddress;        // Host address
 char ipAddress[SMALL_BUF_SZ],          // IP of current host
