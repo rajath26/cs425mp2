@@ -41,6 +41,8 @@ struct hb_entry hb_table[4];  // this is the heart beat table mantained for a si
 
 //FILE *log1=fopen("machine1.log", "w");
 
+char logMsg[500];
+
 int delete_entry_table(int table_index)
 {
    funcEntry(logF,ip_Address,"delete_entry_table");
@@ -249,7 +251,7 @@ int update_table(struct hb_entry *msg_table)
        }
   }
   pthread_mutex_unlock(&table_mutex);
-  logMsg=create_message(hb_table);
+ // logMsg=create_message(hb_table);
   printToLog(logF,ip_Address,logMsg);
   funcExit(logF,ip_Address,"update_table",0);
   return 0;
@@ -332,7 +334,7 @@ void initialize_two_hosts(struct two_hosts* ptr)
 
 int choose_n_hosts(struct two_hosts *ptr, int choice)
 {
-  funcEntry(logF,ip_address,"choose_n_hosts");
+  funcEntry(logF,ip_Address,"choose_n_hosts");
   int i=0;
   int k=0;
   int count=0;

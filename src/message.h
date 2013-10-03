@@ -33,6 +33,8 @@ struct hb_entry {
   int status;
 };
 
+char ip_Address[100]="";
+
 struct hb_entry entry[MAX_HOSTS];  // this table is used to extract values from the message
 struct hb_entry hb_table[MAX_HOSTS];  // this is the heart beat table mantained for a single host
 
