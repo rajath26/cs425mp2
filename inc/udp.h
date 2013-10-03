@@ -41,6 +41,8 @@
 /* 
  * Global variables
  */
+extern char ipAddress[SMALL_BUF_SZ];
+extern char portNo[SMALL_BUF_SZ];
 
 /*  
  * Function declarations

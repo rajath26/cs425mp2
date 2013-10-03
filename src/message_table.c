@@ -6,7 +6,7 @@
 #include"message.h"
 #define TREMOVE 20
 
-//FILE *log=fopen("log.txt","w");
+//FILE *log1;
 /*
 #define UP 1
 #define DOWN 0
@@ -41,14 +41,14 @@ struct hb_entry hb_table[4];  // this is the heart beat table mantained for a si
 
 //FILE *log1=fopen("machine1.log", "w");
 
-char logMsg[500];
+char logMsg1[500];
 
 int delete_entry_table(int table_index)
 {
    funcEntry(logF,ip_Address,"delete_entry_table");
    memset(&hb_table[table_index],0,sizeof(struct hb_entry));
-   sprintf(logMsg,"host_entry %d in the hb_table is deleted",table_index);
-   printToLog(logF,ip_Address,logMsg);
+   sprintf(logMsg1,"host_entry %d in the hb_table is deleted",table_index);
+   printToLog(logF,ip_Address,logMsg1);
    funcExit(logF,ip_Address,"delete_entry_table",0);
    return 0;
 }
@@ -95,14 +95,14 @@ int check_table_for_failed_hosts()
                            hb_table[i].status = DOWN;
                            /*put a logger message*/
                            //char message[100];
-                           sprintf(logMsg,"Entry %d is being marked DOWN\n",i);
-                           printToLog(logF,ip_Address,logMsg);
+                           sprintf(logMsg1,"Entry %d is being marked DOWN\n",i);
+                           printToLog(logF,ip_Address,logMsg1);
                 }
                 if((timer.tv_sec - cmp_time) >= TREMOVE){
                            delete_entry_table(i);
                            //char message[100];
-                           sprintf(logMsg,"Entry %d is being removed\n",i);  
-                           printToLog(logF,ip_Address,logMsg);
+                           sprintf(logMsg1,"Entry %d is being removed\n",i);  
+                           printToLog(logF,ip_Address,logMsg1);
                 }
        }
   }
@@ -156,23 +156,36 @@ int host_to_network(char *message)
 int initialize_table(char *port,char *ip,int host_id)
 {
   int i=0;
+  char portNo[100];
+  char ipAddr[100];
+  int hostId;
+  strcpy(portNo, port);
+  strcpy(ipAddr, ip);
+  hostId = host_id;
   funcEntry(logF,ip_Address,"initialize_table");
   printToLog(logF,ip_Address,"Initializing gossip table");
+  printToLog(logF,"DEBUG ME",port);
+  printToLog(logF,"DEBUg ME",ip);
+  //printToLog(logF,"DEBUG ME", itoa(host_id));
+  printToLog(logF,"DEBUG ME",portNo);
+  printToLog(logF,"DEBUg ME",ipAddr);
+  //printToLog(logF,"DEBUG ME", itoa(hostId));
 //  pthread_mutex_lock(&table_mutex);
   for(i=0;i<MAX_HOSTS;i++)
     {
-      if(i!=host_no)
+      if(i!=host_id)
          memset(&hb_table[i],0,sizeof(struct hb_entry));
       else {
          hb_table[i].valid=1;   // initialize the appropriate the host_id entry
          struct timeval start;
          gettimeofday(&start,NULL);
          char buffer[70];
-         sprintf(buffer,"%d_%ld",host_id,start.tv_sec);
+         sprintf(buffer,"%d_%ld",hostId,start.tv_sec);
 
          strcpy(hb_table[i].host_id,buffer); // initialize host_id
-         strcpy(hb_table[i].IP,ip); // initialize ip
-         strcpy(hb_table[i].port,port);  // initialize port
+         strcpy(hb_table[i].IP,ipAddr); // initialize ip
+         printToLog(logF, "I HOPE THI IS NOT TRUNCATED", hb_table[i].IP);
+         strcpy(hb_table[i].port,portNo);  // initialize port
          hb_table[i].hb_count=-1;
          strcpy(hb_table[i].time_stamp,"0");
          hb_table[i].status=1;
@@ -224,7 +237,7 @@ int update_table(struct hb_entry *msg_table)
   //clear_temp_entry_table(msg_table);
   for(i=0;i<MAX_HOSTS;i++){
        if(msg_table[i].valid){
-              if(msg_table[i].hb_count > hb_table[i].hb_count){
+              if(msg_table[i].hb_count >= hb_table[i].hb_count){
                        if(!hb_table[i].valid){
                                  hb_table[i].valid=1;
                                  strcpy(hb_table[i].host_id,msg_table[i].host_id);
@@ -252,7 +265,7 @@ int update_table(struct hb_entry *msg_table)
   }
   pthread_mutex_unlock(&table_mutex);
  // logMsg=create_message(hb_table);
-  printToLog(logF,ip_Address,logMsg);
+  printToLog(logF,ip_Address,logMsg1);
   funcExit(logF,ip_Address,"update_table",0);
   return 0;
 }
@@ -371,6 +384,7 @@ int choose_n_hosts(struct two_hosts *ptr, int choice)
       k++;
   } 
  funcExit(logF,ip_Address,"choose_n_hosts",0);
+ return counter;
 }
   
 /*
@@ -407,6 +421,8 @@ void main()
 */
 
 /*
+
+
 char *ptr=(char *)malloc(200);
 strcpy(ptr,"1:0_1380475981:192.168.100.120:1234:123:0:1;1:1_1234567891:192.123.456.678:123:12345:0:0;0::::0::0;0::::0::0;");
 log1=fopen("./log.txt","w");
@@ -420,7 +436,7 @@ print_table(hb_entry1);
 
 //printf("\n%s\n",hb_entry1[0].IP);
 //printf("%d\n",hb_entry1[0].valid);
-initialize_table();
+initialize_table("1234","192.168.100.100",0);
 //printf("%s\n",hb_table[0].IP);
 //printf("%s\n",hb_table[0].host_id);
 

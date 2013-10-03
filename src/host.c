@@ -255,7 +255,7 @@ int spawnHelperThreads()
     int rc = SUCCESS,                    // Return code
         i_rc,                            // Temp RC
         threadNum = 0,                   // Thread counter
-        *ptr;                            // Pointer to thread counter
+        *ptr[NUM_OF_THREADS];         // Pointer to thread counter
     
     register int counter;                // Counter variable
   
@@ -266,13 +266,13 @@ int spawnHelperThreads()
      */
     for ( counter = 0; counter < NUM_OF_THREADS; counter++ )
     {
-        ptr = (int *) malloc(sizeof(int));
-        *ptr = counter;
+        ptr[counter] = (int *) malloc(sizeof(int));
+        *(ptr[counter]) = counter;
 
         // Debug. Uncomment if req
-        printf("\nptr : %d\n", *ptr);
+        printf("\nptr : %d\n", *ptr[counter]);
 
-        i_rc = pthread_create(&threadID[counter], NULL, startKelsa, (void *) ptr); 
+        i_rc = pthread_create(&threadID[counter], NULL, startKelsa, (void *) ptr[counter]); 
         if ( SUCCESS != i_rc )
         {
             printf("\npthread creation failure\n");
@@ -318,7 +318,7 @@ void * startKelsa(void *threadNum)
         i_rc,                         // Temp RC
         *counter;                     // Thread counter
 
-    counter = (int *) malloc(sizeof(int));
+    //counter = (int *) malloc(sizeof(int));
     counter = (int *) threadNum;
 
     pthread_t tid = pthread_self();   // Thread ID
@@ -424,6 +424,11 @@ int receiverFunc()
         /////////
         // Step 1
         /////////
+        memset(recMsg, '\0', LONG_BUF_SZ);
+        
+        // Debug
+        printToLog(logF, "recMsg before recvUDP", recMsg);
+
         numOfBytesRec = recvUDP(recMsg, LONG_BUF_SZ, memberAddress);
         // Check if 0 bytes is received 
         if ( SUCCESS == numOfBytesRec )
@@ -433,6 +438,10 @@ int receiverFunc()
              printToLog(logF, ipAddress, logMsg);
              continue;
         }
+
+        // Debug
+        printToLog(logF, "recMsg after recvUDP", recMsg);
+
         /////////
         // Step 2
         /////////
@@ -454,19 +463,25 @@ int receiverFunc()
             ///////////
             
             // Debug. uncomment if req
-            printf("\nBefore clear_temp_entry_table\n"); 
+            printToLog(logF, ipAddress, "\nBefore clear_temp_entry_table\n"); 
 
             clear_temp_entry_table(recMsgStruct);
 
-            printf("\nAfter c_t_e_t\n");
+            printToLog(logF, ipAddress, "\nAfter c_t_e_t\n");
 
-            printf("\nbefore extract_msg\n");
+            printToLog(logF, ipAddress, "\nbefore extract_msg\n");
+
+            sprintf(logMsg, "Token received message before e_m: %s", tokenRecMsg);
+            printToLog(logF, ipAddress, logMsg);
 
             recMsgStruct = extract_message(tokenRecMsg);
 
-            printf("\nafter e_m\n");
+            printToLog(logF, ipAddress, "\nafter e_m\n");
 
-            printf("\nToken Received Message: %s", tokenRecMsg);
+            //printToLog(logF, ipAddress, "\nToken Received Message: %s", tokenRecMsg);
+
+            sprintf(logMsg, "Token received message: %s", tokenRecMsg);
+            printToLog(logF, ipAddress, logMsg);
 
             if ( NULL == recMsgStruct )
             {
@@ -547,14 +562,24 @@ int checkOperationCode(char *recMsg, int *op_code, char *tokenRecMsg)
     int rc = SUCCESS;              // Return code
  
     char *token;                   // Token
- 
+
+    // Debug
+    printToLog(logF, "recMsg in checkOpCode", recMsg); 
+
     token = strtok(recMsg, "$");
 
-    if ( NULL != token ) 
+    // Debug
+    printToLog(logF, "token *****", token);
+
+    if ( (NULL != token) && (SUCCESS == strcmp(token, "JOIN")) ) 
     {
         printToLog(logF, ipAddress, "JOIN Op");
         *op_code = JOIN_OP_CODE;
+        // Debug
+        printToLog(logF, "token *****", token); 
         token = strtok(NULL, "$"); 
+        // Debug
+        printToLog(logF, "token *****", token);
         strcpy(tokenRecMsg, token);
         printToLog(logF, ipAddress, tokenRecMsg);
     }
@@ -608,6 +633,12 @@ int sendFunc()
 
     while(1)
     {
+
+        memset(msgToSend, '\0', LONG_BUF_SZ);
+
+        // Debug
+        printToLog(logF, "SENDOct3", msgToSend);
+
         initialize_two_hosts(ptr);
         num_of_hosts_chosen = choose_n_hosts(ptr, GOSSIP_HOSTS);
 
@@ -619,9 +650,11 @@ int sendFunc()
 
         for ( counter = 0; counter < num_of_hosts_chosen; counter++ )
         {
+            printToLog(logF, "PORT NO*****", hb_table[hosts[counter].host_id].port);
             strcpy(portNoChar, hb_table[hosts[counter].host_id].port);
             portNo = atoi(portNoChar);
             strcpy(ipAddr, hb_table[hosts[counter].host_id].IP);
+            printToLog(logF, "IP ADDR*****", hb_table[hosts[counter].host_id].IP);
             // create message
             i_rc = create_message(msgToSend);
             if ( SUCCESS != i_rc )
@@ -629,6 +662,9 @@ int sendFunc()
                 printToLog(logF, ipAddress, "Unable to create message");
                 continue;
             }
+
+            // Debug
+            printToLog(logF, "SENDOct3 after create_message", msgToSend);
 
             // Send UDP packets
             numOfBytesSent = sendUDP(portNo, ipAddr, msgToSend);
@@ -638,6 +674,8 @@ int sendFunc()
                 printToLog(logF, ipAddress, "ZERO bytes sent");
                 continue;
             }
+            
+            memset(msgToSend, '\0', LONG_BUF_SZ);
         } // End of for ( counter = 0; counter < num_of_hosts_chosen; counter++ )
         sleep(2);
     } // End of while 
@@ -773,7 +811,7 @@ int main(int argc, char *argv[])
     /*
      * Init local host heart beat table
      */
-    initialize_table(ipAddress, portNo, host_no);
+    initialize_table(portNo, ipAddress, host_no);
     printToLog(logF, ipAddress, "Initialized my table");
 
     // Debug. uncomment if req

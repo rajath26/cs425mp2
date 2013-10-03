@@ -45,7 +45,7 @@ int recvUDP(char *buffer, int length, struct sockaddr_in hostAddr)
 {
 
     funcEntry(logF, ipAddress, "recvUDP");
-    
+
     int numOfBytesRec;       // Number of bytes received
 
     socklen_t len;           // Length
