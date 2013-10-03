@@ -260,14 +260,15 @@ int spawnHelperThreads()
   
     pthread_t threadID[NUM_OF_THREADS];  // Helper threads
 
-    ptr = (int *) malloc(sizeof(int));
-
     /*
      * Create threads:
      */
     for ( counter = 0; counter < NUM_OF_THREADS; counter++ )
     {
-        *ptr = threadNum;
+        ptr = (int *) malloc(sizeof(int));
+        *ptr = counter;
+        // Debug. Uncomment if not req
+        printf("\nptr : %d\n", *ptr);
         i_rc = pthread_create(&threadID[counter], NULL, startKelsa, (void *) ptr); 
         if ( SUCCESS != i_rc )
         {
@@ -279,7 +280,12 @@ int spawnHelperThreads()
             goto rtn;
         }
         printToLog(logF, ipAddress, "pthread() success");
-        threadNum++;
+    }
+
+    fclose(logF);
+    for ( counter = 0; counter < NUM_OF_THREADS; counter++ )
+    {
+        pthread_join(threadID[counter], NULL);
     }
 
   rtn:
@@ -307,13 +313,17 @@ void * startKelsa(void *threadNum)
 
     int rc = SUCCESS,                 // Return code
         i_rc,                         // Temp RC
-        *counter = (int *)threadNum;  // Thread counter
+        *counter;                     // Thread counter
+
+    counter = (int *) malloc(sizeof(int));
+    counter = (int *) threadNum;
 
     pthread_t tid = pthread_self();   // Thread ID
 
-    sprintf(logMsg, "This is thread with counter: %d and thread ID: %u", *counter, tid);
+    sprintf(logMsg, "This is thread with counter: %d and thread ID: %lu", *counter, tid);
     printToLog(logF, ipAddress, logMsg);
 
+    printf("\ncounter: %d", *counter);
     switch(*counter)
     {
         case 0:
@@ -571,6 +581,9 @@ int sendFunc()
            *ptr;                           // Pointer to above
  
     ptr = hosts;
+
+    while(1)
+    {
     
     initialize_two_hosts(ptr);
     num_of_hosts_chosen = choose_n_hosts(ptr, GOSSIP_HOSTS);
@@ -600,6 +613,8 @@ int sendFunc()
             continue;
         }
     } // End of for ( counter = 0; counter < num_of_hosts_chosen; counter++ )
+    sleep(2);
+    } // End of while 
     
   rtn:
     funcExit(logF, ipAddress, "sendFunc", rc);
@@ -625,10 +640,13 @@ int heartBeatCheckerFunc()
 
     funcEntry(logF, ipAddress, "heartBeatChecker");
 
-    int rc = SUCCESS,        // Return code
-        i_rc;                // temp RC
+    int rc = SUCCESS;        // Return code
 
-    periodic_heartbeat_update();
+     while(1){
+       sleep(HEART_BEAT_UPDATE_SEC);
+       update_my_heartbeat();
+       check_table_for_failed_hosts();
+     }
 
   rtn:
     funcExit(logF, ipAddress, "heartBeatChecker", rc);
@@ -677,13 +695,27 @@ int main(int argc, char *argv[])
     /*
      * Init log file 
      */
+    printf("\nCreating log\n");
     i_rc = logFileCreate(logF);
     if ( i_rc != SUCCESS )
     {
          printf("\nLog file won't be created. There was an error\n");
     }
 
+    printf("\nlog success\n");
+
+    /*
+     * Copy ip address and port no to local buffer
+     */
+    memset(ipAddress, '\0', SMALL_BUF_SZ);
+    sprintf(ipAddress, "%s", argv[2]);
+    memset(portNo, '\0', SMALL_BUF_SZ);
+    sprintf(portNo, "%s", argv[1]);
+
+
+    printf("\nfuncEntry\n");
     funcEntry(logF, ipAddress, "host::main");
+    printf("\nAfter funcENtery\n");
 
     /*
      * Command line arguments check
@@ -703,11 +735,13 @@ int main(int argc, char *argv[])
     memset(portNo, '\0', SMALL_BUF_SZ);
     sprintf(portNo, "%s", argv[1]);
 
+    printf("\n before init table\n");
     /*
      * Init local host heart beat table
      */
     initialize_table();
     printToLog(logF, ipAddress, "Initialized my table");
+     printf("\n AFter init tabl\n");
 
     /* 
      * Get the node type based on third argument. By default it

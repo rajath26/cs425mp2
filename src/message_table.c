@@ -39,14 +39,14 @@ struct hb_entry entry[4];  // this table is used to extract values from the mess
 struct hb_entry hb_table[4];  // this is the heart beat table mantained for a single host
 */
 
-FILE *log1;
+//FILE *log1=fopen("machine1.log", "w");
 
 int delete_entry_table(int table_index)
 {
    memset(&hb_table[table_index],0,sizeof(struct hb_entry));
    char message[100];
    sprintf(message,"host_entry %d in the hb_table is deleted",table_index);
-   printToLog(log1,hb_table[host_no].host_id,message);
+   printToLog(logF,hb_table[host_no].host_id,message);
    return 0;
 }
 
@@ -55,7 +55,7 @@ int clear_temp_entry_table(struct hb_entry *msg_table)
   int i=0;
   char message[100];
  // printToLog(log1,hb_table[host_no].host_id,"temporary entry is being deleted");
-  fprintf(log1,message,"%s","deleting your entry");
+  fprintf(logF,message,"%s","deleting your entry");
   for(i=0;i<MAX_HOSTS;i++){
      memset(&msg_table[i],0,sizeof(struct hb_entry));
   }
@@ -88,13 +88,13 @@ int check_table_for_failed_hosts()
                            /*put a logger message*/
                            char message[100];
                            sprintf(message,"Entry %d is being marked DOWN\n",i);
-                           printToLog(log1,hb_table[host_no].host_id,message);
+                           printToLog(logF,hb_table[host_no].host_id,message);
                 }
                 if((timer.tv_sec - cmp_time) >= TREMOVE){
                            delete_entry_table(i);
                            char message[100];
                            sprintf(message,"Entry %d is being removed\n",i);  
-                           printToLog(log1,hb_table[host_no].host_id,message);
+                           printToLog(logF,hb_table[host_no].host_id,message);
                 }
        }
   }
@@ -147,7 +147,7 @@ int host_to_network(char *message)
 int initialize_table()
 {
   int i=0;
-  printToLog(log1,hb_table[host_no].host_id,"Initializing gossip table");
+  printToLog(logF,hb_table[host_no].host_id,"Initializing gossip table");
 //  pthread_mutex_lock(&table_mutex);
   for(i=0;i<MAX_HOSTS;i++)
     {

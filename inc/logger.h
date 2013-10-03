@@ -26,7 +26,7 @@
 /*
  * Macros
  */
-#define LOG_FILE_LOCATION "~/machine.log"
+#define LOG_FILE_LOCATION "machine.log"
 #define ERROR             -1
 #define SUCCESS           0
 

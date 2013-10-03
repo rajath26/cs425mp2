@@ -44,8 +44,8 @@ int logFileCreate(FILE *fp)
 
     int rc = SUCCESS;        // Return code 
        
-    fp = fopen(LOG_FILE_LOCATION, "w");
-    if ( NULL == fp ) 
+    logF = fopen(LOG_FILE_LOCATION, "w");
+    if ( NULL == logF ) 
     {
         printf("\nUnable to open log file in write mode\n");
         rc = ERROR;
@@ -76,7 +76,7 @@ int printToLog(FILE *fp, char *keyMsg, char *valueMsg)
 
     int rc = SUCCESS;        // Return code
 
-    fprintf(fp, "%s : %s", keyMsg, valueMsg); 
+    fprintf(fp, "%s : %s\n", keyMsg, valueMsg); 
 
   rtn:
     return rc;
@@ -127,8 +127,8 @@ int funcEntry(FILE *fp, char *keyMsg, char *funcName)
 {
 
     int rc = SUCCESS;        // Return code
-
-    fprintf(fp, "%s : ENTRY - %s", keyMsg, funcName);
+    printf("\nhello ::: %s  %s\n",keyMsg,funcName);
+    fprintf(fp, "%s : ENTRY - %s\n", keyMsg, funcName);
 
   rtn:
     return rc;
@@ -155,7 +155,7 @@ int funcExit(FILE *fp, char *keyMsg, char *funcName, int f_rc)
 
     int rc = SUCCESS;        // Return code
 
-    fprintf(fp, "%s : EXIT - %s with exit rc = %d", keyMsg, funcName, f_rc);
+    fprintf(fp, "%s : EXIT - %s with exit rc = %d\n", keyMsg, funcName, f_rc);
 
   rtn:
     return rc;
