@@ -4,8 +4,7 @@
 //    FILE NAME: host.c
 //
 //    DECSRIPTION: This is the source file for the leader host 
-//                 i.e. the contact host that approves other hosts
-//                 to join the network and the member host
+//                 and the member host
 //
 //    OPERATING SYSTEM: Linux UNIX only
 //    TESTED ON:
@@ -151,9 +150,9 @@ int requestMembershipToLeader(char *leaderPort, char *leaderIp)
 
     int rc = SUCCESS,                            // Return code 
         i_rc,                                    // Temp RC
-        numOfBytesSent; 
+        numOfBytesSent;                          // Num of bytes sent
 
-    char joinMessage[MED_BUF_SZ],                // Buffer
+    char joinMessage[LONG_BUF_SZ],                // Buffer
          joinOperation[SMALL_BUF_SZ] = "JOIN$",  // Join prefix
          tableMessage[LONG_BUF_SZ];              // Table msg
 
@@ -208,7 +207,7 @@ int CLI_UI()
     printf("\n");
     printf("\t\t***********************************************************\n");
     printf("\t\t***********************************************************\n");
-    printf("\t\tI am a Member host wanting to join Daisy distributed system\n"0);
+    printf("\t\tI am a Member host wanting to join Daisy distributed system\n");
     printf("\t\t***********************************************************\n");
     printf("\t\t***********************************************************\n");
     printf("\n\t\tInput the IP address of the Leader node:\n");
@@ -310,7 +309,7 @@ void * startKelsa(void *threadNum)
 
     switch(*counter)
     {
-        case 1:
+        case 0:
         // First thread calls receiver function that does:
         // i) Approve join requests if LEADER
         // ii) Receive heartbeats
@@ -319,7 +318,7 @@ void * startKelsa(void *threadNum)
         i_rc = receiverFunc(); 
         break;
 
-        case 2:
+        case 1:
         // Second thread calls sender function that does:
         // i) Sends heartbeats
         strcat(logMsg, "executing senFunc");
@@ -327,7 +326,7 @@ void * startKelsa(void *threadNum)
         i_rc = sendFunc();
         break;
 
-        case 3:
+        case 2:
         // Third thread calls heartbeat checker function that:
         // i) checks heartbeat table
         strcat(logMsg, "executing heartBeatCheckerFunc");

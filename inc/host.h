@@ -3,10 +3,8 @@
 //
 //    FILE NAME: host.h 
 //
-//    DECSRIPTION: This is the header file for the host that 
-//                 functions as the leader i.e. the contact host
-//                 that approves other hosts joining the cluster
-//                 and the member hosts  
+//    DECSRIPTION: This is the header file for the leader
+//                 host and the member hosts  
 //
 //    OPERATING SYSTEM: Linux UNIX only
 //    TESTED ON:
@@ -49,6 +47,9 @@
 #define JOIN_OP_CODE       9
 #define RECEIVE_HB_OP_CODE 8
 #define GOSSIP_HOSTS       2
+#define SMALL_BUF_SZ       100
+#define MED_BUF_SZ         1024
+#define LONG_BUCF_SZ       4096
 #define LEADER_STRING      "leader"
 #define MEMBER_STRING      "member"
 
@@ -82,8 +83,9 @@ int receiverFunc();
 int sendFunc();
 int heartBeatCheckerFunc();
 int checkOperationCode(
-                       char * recMsg,    // Received message
-                       int op_code       // Returned op code
+                       char * recMsg,        // Received message
+                       int op_code           // Returned op code
+                       char * tokenRecMsg    // Returned msg
                       );
 
 /*
