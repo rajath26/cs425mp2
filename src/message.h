@@ -13,8 +13,6 @@
 #define TIME_STAMP_LEN 20
 #define HEART_BEAT_UPDATE_SEC 1
 
-char *host_ip_address="192.168.100.100";
-char *host_port="1234";
 
 pthread_mutex_t table_mutex;
 
@@ -41,7 +39,7 @@ struct hb_entry hb_table[MAX_HOSTS];  // this is the heart beat table mantained 
 int update_my_heartbeat();
 int check_table_for_failed_hosts();
 void periodic_heartbeat_update();
-int initialize_table();
+int initialize_table(char *,char *,int);
 int create_message(char *);
 int print_table(struct hb_entry*);
 int update_table(struct hb_entry *);
