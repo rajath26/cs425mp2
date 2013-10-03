@@ -2,8 +2,8 @@
 #include<stdlib.h>
 #include<string.h>
 #include<unistd.h>
-#include"message.h"
 #include"logger.c"
+#include"message.h"
 #define TREMOVE 20
 
 //FILE *log=fopen("log.txt","w");
@@ -377,9 +377,12 @@ void go_live(char *message)
   sprintf(buffer,"%d#%s",JOIN_OPCODE,message);  
 }
        
-
+/*
 void main()
-{
+{ */
+
+
+/*
 char *ptr=(char *)malloc(200);
 strcpy(ptr,"1:0_1380475981:192.168.100.120:1234:123:0:1;1:1_1234567891:192.123.456.678:123:12345:0:0;0::::0::0;0::::0::0;");
 log1=fopen("./log.txt","w");
@@ -426,4 +429,4 @@ memset(buffer,0,500);
 //char *buffer = (char *)malloc(300);
 //create_message(buffer);
 //printf("\n%s\n",buffer);
-}
+}*/

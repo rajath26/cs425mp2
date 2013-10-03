@@ -25,7 +25,7 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
-
+#include <stdbool.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -49,20 +49,21 @@
 #define GOSSIP_HOSTS       2
 #define SMALL_BUF_SZ       100
 #define MED_BUF_SZ         1024
-#define LONG_BUCF_SZ       4096
+#define LONG_BUF_SZ       4096
 #define LEADER_STRING      "leader"
 #define MEMBER_STRING      "member"
 
 /*
  * Global variables
  */
-FILE *log;                             // File pointer to log
+FILE *logF;                            // File pointer to log
 int udp;                               // UDP socket descriptor
 struct sockaddr_in hostAddress;        // Host address
 char ipAddress[SMALL_BUF_SZ],          // IP of current host
      portNo[SMALL_BUF_SZ],             // Port no of current host
      logMsg[MED_BUF_SZ];               // Log message buffer 
-bool isLeader = FALSE;                 // Bool variable
+bool isLeader = false;                 // Bool variable
+//extern struct hb_entry hb_table[MAX_HOSTS];
 
 /* 
  * Function Declarations
@@ -73,8 +74,8 @@ int CLA_checker(
                 );
 int setUpUDP();
 int requestMembershipToLeader(
-                              char *leaderPort,   // Leader IP
-                              char *leaderIp,     // Leader port
+                              int leaderPort,     // Leader port
+                              char *leaderIp      // Leader IP 
                              );
 int CLI_UI();
 int spawnHelperThreads();
@@ -84,7 +85,7 @@ int sendFunc();
 int heartBeatCheckerFunc();
 int checkOperationCode(
                        char * recMsg,        // Received message
-                       int op_code           // Returned op code
+                       int * op_code,        // Returned op code
                        char * tokenRecMsg    // Returned msg
                       );
 

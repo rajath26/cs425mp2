@@ -19,7 +19,7 @@
 /*
  * Header files
  */
-#include "udp.h"
+#include "../inc/udp.h"
 
 /*
  * Function declarations
@@ -41,17 +41,21 @@
  * (int) bytes received 
  * 
  ****************************************************************/
-int recvUDP(char *buffer, int length, struct sockaddr_in hostAddr, socklen_t sock_length)
+int recvUDP(char *buffer, int length, struct sockaddr_in hostAddr)
 {
 
-    funcEntry(log, ipAddress, "recvUDP");
+    funcEntry(logF, ipAddress, "recvUDP");
     
     int numOfBytesRec;       // Number of bytes received
 
-    numOfBytesRec = recvFrom(udp, buffer, length, (struct sockaddr *) &hostAddr, &sock_length);
+    socklen_t len;           // Length
+
+    len = sizeof(hostAddr);
+
+    numOfBytesRec = recvfrom(udp, buffer, length, 0, (struct sockaddr *) &hostAddr, &len);
 
   rtn:
-    funcExit(log, ipAddress, "recvUDP", numOfBytesRec);
+    funcExit(logF, ipAddress, "recvUDP", numOfBytesRec);
 
 } // End of recvUDP()
 
@@ -72,22 +76,22 @@ int recvUDP(char *buffer, int length, struct sockaddr_in hostAddr, socklen_t soc
 int sendUDP(int portNo, char * ipAddr, char * buffer)
 {
 
-    funcEntry(log, ipAddress, "sendUDP");
+    funcEntry(logF, ipAddress, "sendUDP");
 
     int numOfBytesSent;                 // Number of bytes sent 
 
     struct sockaddr_in hostAddr;        // Address of host to send message
 
-    memset(hostAddr, 0, sizeof(struct sockaddr_in));
+    memset(&hostAddr, 0, sizeof(struct sockaddr_in));
     hostAddr.sin_family = AF_INET;
     hostAddr.sin_port = htons(portNo);
     hostAddr.sin_addr.s_addr = inet_addr(ipAddr);
     memset(&(hostAddr.sin_zero), '\0', 8);
 
-    numOfBytesSent = sendTo(udp, buffer, strlen(buffer), (struct sockaddr *) &hostAddr, sizeof(struct sockaddr));
+    numOfBytesSent = sendto(udp, buffer, strlen(buffer), 0, (struct sockaddr *) &hostAddr, sizeof(struct sockaddr));
 
   rtn:
-    funcExit(log, ipAddress, "sendUDP", numOfBytesSent);
+    funcExit(logF, ipAddress, "sendUDP", numOfBytesSent);
     return numOfBytesSent; 
 
 } // End of sendUDP()

@@ -19,7 +19,7 @@
 /*
  * Header files
  */
-#include "logger.h"
+#include "../inc/logger.h"
 
 /* 
  * Function definitions

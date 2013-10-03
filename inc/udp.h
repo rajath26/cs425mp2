@@ -47,8 +47,7 @@
 int recvUDP(
             char *buffer,        // Buffer to be received  
             int length,          // Length of buffer 
-            struct sockaddr_in,  // Struct holding address
-            socklen_t length     // Length
+            struct sockaddr_in   // Struct holding address
            );
 int sendUDP(
             int portNo,          // Port No

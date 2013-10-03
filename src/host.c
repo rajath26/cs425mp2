@@ -17,7 +17,10 @@
 //****************************************************************************
 //////////////////////////////////////////////////////////////////////////////
 
-#include "host.h"
+#include "../inc/host.h"
+//#include "logger.c"
+#include "udp.c"
+#include "message_table.c"
 
 /*
  * Function definitions
@@ -47,7 +50,7 @@
 int CLA_checker(int argc, char *argv[])
 {
 
-    funcEntry(log, ipAddress, "CLA_checker");
+    funcEntry(logF, ipAddress, "CLA_checker");
 
     int rc = SUCCESS;        // Return code
 
@@ -60,7 +63,7 @@ int CLA_checker(int argc, char *argv[])
     }
     
   rtn:
-    funcExit(log, ipAddress, "CLA_checker", rc);
+    funcExit(logF, ipAddress, "CLA_checker", rc);
     return rc;
 
 } // End of CLA_checker()
@@ -83,9 +86,10 @@ int CLA_checker(int argc, char *argv[])
 int setUpUDP(char * portNo, char * ipAddress)
 {
 
-    funcEntry(log, ipAddress, "setUpUDP");
+    funcEntry(logF, ipAddress, "setUpUDP");
     
-    int rc = SUCCESS;
+    int rc = SUCCESS,        // Return code
+        i_rc;                // Temp RC
  
     // Create a socket
     udp = socket(AF_INET, SOCK_DGRAM, 0);
@@ -95,11 +99,11 @@ int setUpUDP(char * portNo, char * ipAddress)
         printf("\nError number: %d\n", errno);
         printf("\nExiting.... ... .. . . .\n");
         perror("socket");
-        printToLog(log, ipAddress, "socket() failure");
+        printToLog(logF, ipAddress, "socket() failure");
         rc = ERROR;
     }
   
-    printToLog(log, ipAddress, "socket() successful");
+    printToLog(logF, ipAddress, "socket() successful");
 
     memset(&hostAddress, 0, sizeof(struct sockaddr_in));
     hostAddress.sin_family = AF_INET;
@@ -115,14 +119,14 @@ int setUpUDP(char * portNo, char * ipAddress)
         printf("\nError number: %d\n", errno);
         printf("\nExiting.... ... .. . . .\n");
         perror("bind");
-        printToLog(log, ipAddress, "bind() failure");
+        printToLog(logF, ipAddress, "bind() failure");
         rc = ERROR;
      }
 
-     printToLog(log, ipAddress, "bind() successful");
+     printToLog(logF, ipAddress, "bind() successful");
 
   rtn:
-    funcExit(log, ipAddress, "setUpUDP", rc);
+    funcExit(logF, ipAddress, "setUpUDP", rc);
     return rc;
 
 } // End of setUpUDP()
@@ -143,10 +147,10 @@ int setUpUDP(char * portNo, char * ipAddress)
  *       ERROR otherwise
  * 
  ****************************************************************/
-int requestMembershipToLeader(char *leaderPort, char *leaderIp)
+int requestMembershipToLeader(int leaderPort, char *leaderIp)
 {
 
-    funcEntry(log, ipAddress, "requestMembershipToLeader");
+    funcEntry(logF, ipAddress, "requestMembershipToLeader");
 
     int rc = SUCCESS,                            // Return code 
         i_rc,                                    // Temp RC
@@ -159,24 +163,24 @@ int requestMembershipToLeader(char *leaderPort, char *leaderIp)
     /*
      * Construct join message
      */
-    printToLog(log, ipAddress, "Message to be sent leader node is:");
+    printToLog(logF, ipAddress, "Message to be sent leader node is:");
     i_rc = create_message(tableMessage);
     sprintf(joinMessage, "%s%s", joinOperation, tableMessage);
-    printToLog(log, ipAddress, joinMessage);
-    printToLog(log, ipAddress, "Sending message to leader node");
+    printToLog(logF, ipAddress, joinMessage);
+    printToLog(logF, ipAddress, "Sending message to leader node");
     numOfBytesSent = sendUDP(leaderPort, leaderIp, joinMessage);
     sprintf(logMsg, "Num of bytes of join msg sent to leader: %d", numOfBytesSent);
-    printToLog(log, ipAddress, logMsg);
+    printToLog(logF, ipAddress, logMsg);
     // If number of bytes sent is 0
     if ( SUCCESS == numOfBytesSent)
     {
         rc = ERROR; 
         goto rtn;
     }
-    printToLog(log, ipAddress, "Join message sent successfully");
+    printToLog(logF, ipAddress, "Join message sent successfully");
 
   rtn:
-    funcExit(log, ipAddress, "requestMembershipToLeader", rc);
+    funcExit(logF, ipAddress, "requestMembershipToLeader", rc);
     return rc;
 
 } // End of requestMembershipToLeader()
@@ -197,12 +201,13 @@ int requestMembershipToLeader(char *leaderPort, char *leaderIp)
 int CLI_UI()
 {
 
-    funcEntry(log, ipAddress, "CLI_UI");
+    funcEntry(logF, ipAddress, "CLI_UI");
 
-    int rc = SUCCESS;                    // Return code
+    int rc = SUCCESS,                    // Return code
+        i_rc,                            // Temp RC
+        leaderPortNo;                    // Leader port no
 
-    char leaderIpAddress[SMALL_BUF_SZ],  // Buffer to hold leader ip
-         leaderPortNo[SMALL_BUF_SZ];     // Buffer to hold leader port no
+    char leaderIpAddress[SMALL_BUF_SZ];  // Buffer to hold leader ip
     
     printf("\n");
     printf("\t\t***********************************************************\n");
@@ -211,11 +216,11 @@ int CLI_UI()
     printf("\t\t***********************************************************\n");
     printf("\t\t***********************************************************\n");
     printf("\n\t\tInput the IP address of the Leader node:\n");
-    scanf("%s", &leaderIpAddress);
+    scanf("%s", leaderIpAddress);
     printf("\n\t\tInput the Port No of the Laeder node:\n");
-    scanf("%s", &leaderPortNo);
-    sprintf(logMsg, "Trying to join %s at %s", leaderIpAddress, leaderPortNo);
-    printToLog(log, ipAddress, logMsg);
+    scanf("%d", &leaderPortNo);
+    sprintf(logMsg, "Trying to join %s at %d", leaderIpAddress, leaderPortNo);
+    printToLog(logF, ipAddress, logMsg);
     i_rc = requestMembershipToLeader(leaderPortNo, leaderIpAddress);
     if ( i_rc != SUCCESS )
     {
@@ -224,7 +229,7 @@ int CLI_UI()
     }
   
   rtn:
-    funcExit(log, ipAddress, "CLI_UI", rc);
+    funcExit(logF, ipAddress, "CLI_UI", rc);
     return rc;
 
 } // End of CLI_UI()
@@ -244,14 +249,16 @@ int CLI_UI()
 int spawnHelperThreads()
 {
    
-    funcEntry(log, ipAddress, "spawnHelperThreads");
+    funcEntry(logF, ipAddress, "spawnHelperThreads");
 
-    int rc = SUCCESS,       // Return code
-        i_rc,               // Temp RC
-        threadNum = 0,      // Thread counter
-        *ptr;               // Pointer to thread counter
+    int rc = SUCCESS,                    // Return code
+        i_rc,                            // Temp RC
+        threadNum = 0,                   // Thread counter
+        *ptr;                            // Pointer to thread counter
     
-    register int counter;   // Counter variable
+    register int counter;                // Counter variable
+  
+    pthread_t threadID[NUM_OF_THREADS];  // Helper threads
 
     ptr = (int *) malloc(sizeof(int));
 
@@ -268,15 +275,15 @@ int spawnHelperThreads()
             printf("\nError ret code: %d, errno: %d\n", i_rc, errno);
             printf("\nExiting.... ... .. . . .\n");
             rc = ERROR;
-            printToLog(log, ipAddress, "pthread() failure");
+            printToLog(logF, ipAddress, "pthread() failure");
             goto rtn;
         }
-        printToLog(log, ipAddress, "pthread() success");
+        printToLog(logF, ipAddress, "pthread() success");
         threadNum++;
     }
 
   rtn:
-    funcExit(log, ipAddress, "spawnHelperThreads", rc);
+    funcExit(logF, ipAddress, "spawnHelperThreads", rc);
     return rc;
 } // End of spawnHelperThreads();
 
@@ -296,7 +303,7 @@ int spawnHelperThreads()
 void * startKelsa(void *threadNum)
 {
 
-    funcEntry(log, ipAddress, "startKelsa");
+    funcEntry(logF, ipAddress, "startKelsa");
 
     int rc = SUCCESS,                 // Return code
         i_rc,                         // Temp RC
@@ -304,8 +311,8 @@ void * startKelsa(void *threadNum)
 
     pthread_t tid = pthread_self();   // Thread ID
 
-    sprintf(logMsg, "This is thread with counter: %d and thread ID: %u", counter, tid);
-    printToLog(log, ipAddress, logMsg);
+    sprintf(logMsg, "This is thread with counter: %d and thread ID: %u", *counter, tid);
+    printToLog(logF, ipAddress, logMsg);
 
     switch(*counter)
     {
@@ -314,7 +321,7 @@ void * startKelsa(void *threadNum)
         // i) Approve join requests if LEADER
         // ii) Receive heartbeats
         strcat(logMsg, "executing receiverFunc");
-        printToLog(log, ipAddress, logMsg);
+        printToLog(logF, ipAddress, logMsg);
         i_rc = receiverFunc(); 
         break;
 
@@ -322,7 +329,7 @@ void * startKelsa(void *threadNum)
         // Second thread calls sender function that does:
         // i) Sends heartbeats
         strcat(logMsg, "executing senFunc");
-        printToLog(log, ipAddress, logMsg);
+        printToLog(logF, ipAddress, logMsg);
         i_rc = sendFunc();
         break;
 
@@ -330,21 +337,20 @@ void * startKelsa(void *threadNum)
         // Third thread calls heartbeat checker function that:
         // i) checks heartbeat table
         strcat(logMsg, "executing heartBeatCheckerFunc");
-        printToLog(log, ipAddress, logMsg);
+        printToLog(logF, ipAddress, logMsg);
         i_rc = heartBeatCheckerFunc();
         break;
 
         default:
         // Can't get here if we do then exit
-        printToLog(log, ipAddress, "default case. An error");
+        printToLog(logF, ipAddress, "default case. An error");
         rc = ERROR;
         goto rtn;
         break;
     } // End of switch
 
   rtn:
-    funcExit(log, ipAddress, "startKelsa", rc);
-    return rc;
+    funcExit(logF, ipAddress, "startKelsa", rc);
 }
 
 /****************************************************************
@@ -367,7 +373,7 @@ void * startKelsa(void *threadNum)
 int receiverFunc()
 {
 
-    funcEntry(log, ipAddress, "receiverFunc");
+    funcEntry(logF, ipAddress, "receiverFunc");
 
     int rc = SUCCESS,                    // Return code
         numOfBytesRec,                   // Number of bytes received
@@ -375,12 +381,11 @@ int receiverFunc()
         op_code;                         // Operation code
 
     char recMsg[LONG_BUF_SZ],            // Received message
-         tokenRecMsg[LONG_BUF_SZ];       // Received message without join op code 
+         tokenRecMsg[LONG_BUF_SZ],       // Received message without join op code 
+         buffer[SMALL_BUF_SZ];           // Temp buffer
 
     struct sockaddr_in memberAddress;    // Address of host 
  
-    socklen_t length;                    // Length
-
     struct hb_entry * recMsgStruct;      // Heart beat table that holds received message
 
     recMsgStruct = (struct hb_entry *) malloc(4*sizeof(struct hb_entry));
@@ -398,26 +403,25 @@ int receiverFunc()
 
     for(;;)
     {
-        length = sizeof(memberAddress);
         /////////
         // Step 1
         /////////
-        numOfBytesRec = recvUDP(recMsg, LONG_BUF_SZ, memberAddress, &length);
+        numOfBytesRec = recvUDP(recMsg, LONG_BUF_SZ, memberAddress);
         // Check if 0 bytes is received 
         if ( SUCCESS == numOfBytesRec )
         {
              sprintf(logMsg, "Number of bytes received is ZERO = %d", numOfBytesRec);
              printf("\n%s\n", logMsg);
-             printToLog(log, ipAddress, logMsg);
+             printToLog(logF, ipAddress, logMsg);
              continue;
         }
         /////////
         // Step 2
         /////////
-        i_rc = checkOperationCode(recMsg, op_code, tokenRecMsg);
+        i_rc = checkOperationCode(recMsg, &op_code, tokenRecMsg);
         if ( i_rc != SUCCESS ) 
         {
-            printToLog(log, ipAddress, "Unable to retrieve opcode");
+            printToLog(logF, ipAddress, "Unable to retrieve opcode");
             continue;
         }
         /////////
@@ -425,8 +429,8 @@ int receiverFunc()
         /////////
         if ( JOIN_OP_CODE == op_code )
         {
-            sprintf(logMsg, "JOIN msg from %s", inet_ntop(AF_INET, &clientAddress.sin_addr, buffer, sizeof(buffer)));
-            printToLog(log, ipAddress, logMsg);
+            sprintf(logMsg, "JOIN msg from %s", inet_ntop(AF_INET, &memberAddress.sin_addr, buffer, sizeof(buffer)));
+            printToLog(logF, ipAddress, logMsg);
             ///////////
             // Step 3i
             ///////////
@@ -434,7 +438,7 @@ int receiverFunc()
             recMsgStruct = extract_message(tokenRecMsg);
             if ( NULL == recMsgStruct )
             {
-                printToLog(log, ipAddress, "Unable to extract message");
+                printToLog(logF, ipAddress, "Unable to extract message");
                 continue;
             }
             ////////////
@@ -443,7 +447,7 @@ int receiverFunc()
             i_rc = update_table(recMsgStruct);
             if ( i_rc != SUCCESS )
             {
-                 printToLog(log, ipAddress, "Unable to update heart beat table");
+                 printToLog(logF, ipAddress, "Unable to update heart beat table");
                  continue;
             }
         } // End of if ( JOIN_OP_CODE == op_code )
@@ -459,7 +463,7 @@ int receiverFunc()
             recMsgStruct = extract_message(recMsg);
             if ( NULL == recMsgStruct )
             {
-                printToLog(log, ipAddress, "Unable to extract message");
+                printToLog(logF, ipAddress, "Unable to extract message");
                 continue;
             }
             ///////////
@@ -468,14 +472,14 @@ int receiverFunc()
             i_rc = update_table(recMsgStruct);
             if ( i_rc != SUCCESS )
             {
-                 printToLog(log, ipAddress, "Unable to update heart beat table");
+                 printToLog(logF, ipAddress, "Unable to update heart beat table");
                  continue;
             }
         } // End of else
     } // End of for(;;)
 
   rtn:
-    funcExit(log, ipAddress, "receiverFunc", rc);
+    funcExit(logF, ipAddress, "receiverFunc", rc);
     return rc;
 
 } // End of receiverFunc()
@@ -500,35 +504,35 @@ int receiverFunc()
  *       ERROR otherwise
  * 
  ****************************************************************/
-int checkOperationCode(char *recMsg, int op_code, char *tokenRecMsg)
+int checkOperationCode(char *recMsg, int *op_code, char *tokenRecMsg)
 {
 
-    funcEntry(log, ipAddress, "checkOperationCode");
+    funcEntry(logF, ipAddress, "checkOperationCode");
     
-    int rc = SUCCESS;        // Return code
+    int rc = SUCCESS;              // Return code
  
-    char *token,             // Token
-         joinDel = '$';      // JOIN message delimiter
+    char *token;                   // Token
+    //const char joinDel = '$';      // JOIN message delimiter
  
-    token = strtok(recMsg, joinDel);
+    token = strtok(recMsg, "$");
 
     if ( NULL != token ) 
     {
-        printToLog(log, ipAddress, "JOIN Op");
-        op_code = JOIN_OP_CODE;
-        token = strtok(NULL, joinDel); 
+        printToLog(logF, ipAddress, "JOIN Op");
+        *op_code = JOIN_OP_CODE;
+        token = strtok(NULL, "$"); 
         strcpy(tokenRecMsg, token);
-        printToLog(log, ipAddress, tokenRecMsg);
+        printToLog(logF, ipAddress, tokenRecMsg);
     }
     else
     {
-        op_code = RECEIVE_HB_CODE;
-        printToLog(log, ipAddress, "RECEIVE HB Op");
-        printToLog(log, ipAddress, recMsg);
+        *op_code = RECEIVE_HB_OP_CODE;
+        printToLog(logF, ipAddress, "RECEIVE HB Op");
+        printToLog(logF, ipAddress, recMsg);
     }
     
   rtn:
-    funcExit(log, ipAddress, "checkOperationCode", rc);
+    funcExit(logF, ipAddress, "checkOperationCode", rc);
     return rc;
 
 } // End of checkOperationCode()
@@ -549,7 +553,7 @@ int checkOperationCode(char *recMsg, int op_code, char *tokenRecMsg)
 int sendFunc()
 {
 
-    funcEntry(log, ipAddress, "sendFunc");
+    funcEntry(logF, ipAddress, "sendFunc");
 
     int rc = SUCCESS,                      // Return code
         num_of_hosts_chosen,               // Number of hosts chosen 
@@ -560,14 +564,11 @@ int sendFunc()
     register int counter;                  // Counter
 
     char msgToSend[LONG_BUF_SZ],           // Message to be sent
-         ipAddr[SMALL_BUF_SZ];             // IP Address buffer
+         ipAddr[SMALL_BUF_SZ],             // IP Address buffer
+         portNoChar[SMALL_BUF_SZ];         // Port no
 
     struct two_hosts hosts[GOSSIP_HOSTS],  // An array of two_hosts
            *ptr;                           // Pointer to above
- 
-    /*
-    struct sockaddr_in hostAddress;        // Address of host to send HB
-    */
  
     ptr = hosts;
     
@@ -575,25 +576,18 @@ int sendFunc()
     num_of_hosts_chosen = choose_n_hosts(ptr, GOSSIP_HOSTS);
 
     sprintf(logMsg, "Number of hosts chosen to gossip: %d", num_of_hosts_chosen);
-    printToLog(log, ipAddress, logMsg);
+    printToLog(logF, ipAddress, logMsg);
 
     for ( counter = 0; counter < num_of_hosts_chosen; counter++ )
     {
-        // Init chosen host address
-        /*
-        memset(&hostAddress, 0, sizeof(struct sockaddr_in));
-        hostAddress.sin_family = AF_INET;
-        hostAddress.sin_port = htons(hb_entry[hosts[counter].host_id].port);
-        hostAddress.sin_addr.s_addr = inet_addr(hb_entry[hosts[counter].host_id].IP);
-        memset(&(hostAddress.sin_zero), '\0', 8);
-        */
-        portNo = hb_entry[hosts[counter].host_id].port;
-        strcpy(ipAddr, hb_entry[hosts[counter].host_id].IP);
+        strcpy(portNoChar, hb_table[hosts[counter].host_id].port);
+        portNo = atoi(portNoChar);
+        strcpy(ipAddr, hb_table[hosts[counter].host_id].IP);
         // create message
         i_rc = create_message(msgToSend);
         if ( SUCCESS != i_rc )
         {
-            printToLog(log, ipAddress, "Unable to create message");
+            printToLog(logF, ipAddress, "Unable to create message");
             continue;
         }
 
@@ -602,13 +596,13 @@ int sendFunc()
         // check if 0 bytes is sent
         if ( SUCCESS == numOfBytesSent )
         {
-            printToLog(log, ipAddress, "ZERO bytes sent");
+            printToLog(logF, ipAddress, "ZERO bytes sent");
             continue;
         }
     } // End of for ( counter = 0; counter < num_of_hosts_chosen; counter++ )
     
   rtn:
-    funcExit(log, ipAddress, "sendFunc" rc);
+    funcExit(logF, ipAddress, "sendFunc", rc);
     return rc;
 
 } // End of sendFunc() 
@@ -626,23 +620,18 @@ int sendFunc()
  *       ERROR otherwise
  * 
  ****************************************************************/
-int heartBeatChecker()
+int heartBeatCheckerFunc()
 {
 
-    funcEntry(log, ipAddress, "heartBeatChecker");
+    funcEntry(logF, ipAddress, "heartBeatChecker");
 
     int rc = SUCCESS,        // Return code
         i_rc;                // temp RC
 
-    i_rc = periodic_heartbeat_update();
-    if ( i_rc != SUCCESS )
-    {
-        printToLog(log, ipAddress, "periodic_heartbeat_update failed");
-        continue;
-    }
+    periodic_heartbeat_update();
 
   rtn:
-    funcExit(log, ipAddress, "heartBeatChecker", rc);
+    funcExit(logF, ipAddress, "heartBeatChecker", rc);
     return rc;
 
 } // End of heartBeatChecker()
@@ -685,23 +674,21 @@ int main(int argc, char *argv[])
     char leaderIpAddress[SMALL_BUF_SZ],  // Buffer to hold leader ip
          leaderPortNo[SMALL_BUF_SZ];     // Buffer to hold leader port no
 
-    pthread_t threadID[NUM_OF_THREADS];  // Helper threads
-
     /*
      * Init log file 
      */
-    i_rc = logFileCreate(log);
+    i_rc = logFileCreate(logF);
     if ( i_rc != SUCCESS )
     {
          printf("\nLog file won't be created. There was an error\n");
     }
 
-    funcEntry(log, ipAddress, "host::main");
+    funcEntry(logF, ipAddress, "host::main");
 
     /*
      * Command line arguments check
      */
-    i_rc = CLA_checker(int argc, char *argv[]);
+    i_rc = CLA_checker(argc, argv);
     if ( i_rc != SUCCESS )
     {
         rc = ERROR;
@@ -713,14 +700,14 @@ int main(int argc, char *argv[])
      */
     memset(ipAddress, '\0', SMALL_BUF_SZ);
     sprintf(ipAddress, "%s", argv[2]);
-    memset(portNo, '\0', SNALL_BUF_SZ);
+    memset(portNo, '\0', SMALL_BUF_SZ);
     sprintf(portNo, "%s", argv[1]);
 
     /*
      * Init local host heart beat table
      */
     initialize_table();
-    printToLog(log, ipAddress, "Initialized my table");
+    printToLog(logF, ipAddress, "Initialized my table");
 
     /* 
      * Get the node type based on third argument. By default it
@@ -728,12 +715,12 @@ int main(int argc, char *argv[])
      */
     if ( SUCCESS == strcmp(argv[3], LEADER_STRING) )
     {
-        isLeader = TRUE;
-        printToLog(log, ipAddress, "I am the leader node");
+        isLeader = true;
+        printToLog(logF, ipAddress, "I am the leader node");
     }
     else 
     {
-        printToLog(log, ipAddress, "I am a member node");
+        printToLog(logF, ipAddress, "I am a member node");
     }
 
     /* 
@@ -743,12 +730,12 @@ int main(int argc, char *argv[])
     if ( i_rc != SUCCESS )
     {
         rc = ERROR;
-        printfToLog(log, ipAddress, "UDP setup failure");
+        printToLog(logF, ipAddress, "UDP setup failure");
         goto rtn;
     }
 
     // Log current status 
-    printToLog(log, ipAddress, "UDP setup successfully");
+    printToLog(logF, ipAddress, "UDP setup successfully");
 
     /*
      * If current host is a LEADER then log that this host has
@@ -756,7 +743,7 @@ int main(int argc, char *argv[])
      */
     if ( isLeader )
     {
-        printToLog(log, "I, THE LEADER have joined the Daisy Distributed System");
+        printToLog(logF, ipAddress, "I, THE LEADER have joined the Daisy Distributed System");
     }
 
     /*
@@ -787,11 +774,11 @@ int main(int argc, char *argv[])
 
 
   rtn:
-    funcExit(log, ipAddress, "Host::main", rc);
+    funcExit(logF, ipAddress, "Host::main", rc);
     /*
      * Close the log
      */ 
-    logFileClose(log);
+    logFileClose(logF);
     return rc;
 
 } // End of main
