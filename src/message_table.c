@@ -43,27 +43,31 @@ struct hb_entry hb_table[4];  // this is the heart beat table mantained for a si
 
 int delete_entry_table(int table_index)
 {
+   funcEntry(logF,ip_Address,"delete_entry_table");
    memset(&hb_table[table_index],0,sizeof(struct hb_entry));
-   char message[100];
-   sprintf(message,"host_entry %d in the hb_table is deleted",table_index);
-   printToLog(logF,hb_table[host_no].host_id,message);
+   sprintf(logMsg,"host_entry %d in the hb_table is deleted",table_index);
+   printToLog(logF,ip_Address,logMsg);
+   funcExit(logF,ip_Address,"delete_entry_table",0);
    return 0;
 }
 
 int clear_temp_entry_table(struct hb_entry *msg_table)
 {
+  funcEntry(logF,ip_Address,"clear_temp_entry_table");
   int i=0;
-  char message[100];
+  //char message[100];
  // printToLog(log1,hb_table[host_no].host_id,"temporary entry is being deleted");
-  fprintf(logF,message,"%s","deleting your entry");
+   printToLog(logF,ip_Address,"clear temp entry table");
   for(i=0;i<MAX_HOSTS;i++){
      memset(&msg_table[i],0,sizeof(struct hb_entry));
   }
+  funcExit(logF,ip_Address,"clear_temp_entry table",0);
   return 0;
 }
 
 int update_my_heartbeat()
 {
+  funcEntry(logF,ip_Address,"update_my_heart_beat");
   struct timeval timer;
   char buffer[32];
   pthread_mutex_lock(&table_mutex);
@@ -71,11 +75,13 @@ int update_my_heartbeat()
   gettimeofday(&timer,NULL);
   sprintf(hb_table[host_no].time_stamp,"%ld",timer.tv_sec);
   pthread_mutex_unlock(&table_mutex);
+  funcExit(logF,ip_Address,"update_my_heart_beat",0);
   return 0;
 }
 
 int check_table_for_failed_hosts()
-{
+{ 
+  funcEntry(logF,ip_Address,"check_table_for_failed_hosts");
   int i;
   struct timeval timer;
   pthread_mutex_lock(&table_mutex);
@@ -86,19 +92,20 @@ int check_table_for_failed_hosts()
                 if((timer.tv_sec - cmp_time) >= TFAIL){
                            hb_table[i].status = DOWN;
                            /*put a logger message*/
-                           char message[100];
-                           sprintf(message,"Entry %d is being marked DOWN\n",i);
-                           printToLog(logF,hb_table[host_no].host_id,message);
+                           //char message[100];
+                           sprintf(logMsg,"Entry %d is being marked DOWN\n",i);
+                           printToLog(logF,ip_Address,logMsg);
                 }
                 if((timer.tv_sec - cmp_time) >= TREMOVE){
                            delete_entry_table(i);
-                           char message[100];
-                           sprintf(message,"Entry %d is being removed\n",i);  
-                           printToLog(logF,hb_table[host_no].host_id,message);
+                           //char message[100];
+                           sprintf(logMsg,"Entry %d is being removed\n",i);  
+                           printToLog(logF,ip_Address,logMsg);
                 }
        }
   }
   pthread_mutex_unlock(&table_mutex);
+  funcExit(logF,ip_Address,"check_table_for_failed_hosts",0);
   return 0;
 }
 
@@ -147,7 +154,8 @@ int host_to_network(char *message)
 int initialize_table(char *port,char *ip,int host_id)
 {
   int i=0;
-  printToLog(logF,hb_table[host_no].host_id,"Initializing gossip table");
+  funcEntry(logF,ip_Address,"initialize_table");
+  printToLog(logF,ip_Address,"Initializing gossip table");
 //  pthread_mutex_lock(&table_mutex);
   for(i=0;i<MAX_HOSTS;i++)
     {
@@ -169,12 +177,14 @@ int initialize_table(char *port,char *ip,int host_id)
          update_my_heartbeat();
       }
     }
+    funcExit(logF,ip_Address,"initialize_table",0);
 //  pthread_mutex_unlock(&table_mutex);
 
 return 0;
 }    
 int create_message(char *buffer)
 {
+   funcEntry(logF,ip_Address,"create_message");
    int i;
    char msg[200];
    pthread_mutex_lock(&table_mutex);
@@ -183,13 +193,16 @@ int create_message(char *buffer)
        strcat(buffer,msg);
        memset(msg,0,200);
    }     
+   printToLog(logF,ip_Address,msg);
    pthread_mutex_unlock(&table_mutex);
+   funcExit(logF,ip_Address,"create_message",0);
    return 0;
 }
 
 int print_table(struct hb_entry *table)
 {
    int i=0;
+   
    printf("\n valid\t::\thost_id\t\t::\tIP\t\t::\tPORT\t::\tHB_COUNT\t::\tTIME STAMP\t::\tSTATUS\n");
    pthread_mutex_lock(&table_mutex);
    for(i=0;i<MAX_HOSTS;i++){
@@ -204,6 +217,7 @@ int print_table(struct hb_entry *table)
 int update_table(struct hb_entry *msg_table)
 { 
   int i=0;
+  funcEntry(logF,ip_Address,"update_table");
   pthread_mutex_lock(&table_mutex);
   //clear_temp_entry_table(msg_table);
   for(i=0;i<MAX_HOSTS;i++){
@@ -235,6 +249,9 @@ int update_table(struct hb_entry *msg_table)
        }
   }
   pthread_mutex_unlock(&table_mutex);
+  logMsg=create_message(hb_table);
+  printToLog(logF,ip_Address,logMsg);
+  funcExit(logF,ip_Address,"update_table",0);
   return 0;
 }
 
@@ -242,6 +259,7 @@ int update_table(struct hb_entry *msg_table)
 
 struct hb_entry* extract_message(char *input)
 { 
+   funcEntry(logF,ip_Address,"extract_message");
    int j=0; 
    char a[4][100];
    char *main_entry=input;
@@ -298,6 +316,7 @@ struct hb_entry* extract_message(char *input)
               }
        i++;
     }
+    funcExit(logF,ip_Address,"extract_message",0);
     return entry;            
       
 }
@@ -313,6 +332,7 @@ void initialize_two_hosts(struct two_hosts* ptr)
 
 int choose_n_hosts(struct two_hosts *ptr, int choice)
 {
+  funcEntry(logF,ip_address,"choose_n_hosts");
   int i=0;
   int k=0;
   int count=0;
@@ -348,6 +368,7 @@ int choose_n_hosts(struct two_hosts *ptr, int choice)
       ptr[k].valid=1;
       k++;
   } 
+ funcExit(logF,ip_Address,"choose_n_hosts",0);
 }
   
 /*
