@@ -267,8 +267,10 @@ int spawnHelperThreads()
     {
         ptr = (int *) malloc(sizeof(int));
         *ptr = counter;
-        // Debug. Uncomment if not req
+
+        // Debug. Uncomment if req
         printf("\nptr : %d\n", *ptr);
+
         i_rc = pthread_create(&threadID[counter], NULL, startKelsa, (void *) ptr); 
         if ( SUCCESS != i_rc )
         {
@@ -280,9 +282,9 @@ int spawnHelperThreads()
             goto rtn;
         }
         printToLog(logF, ipAddress, "pthread() success");
+        free(ptr);
     }
 
-    fclose(logF);
     for ( counter = 0; counter < NUM_OF_THREADS; counter++ )
     {
         pthread_join(threadID[counter], NULL);
@@ -323,7 +325,9 @@ void * startKelsa(void *threadNum)
     sprintf(logMsg, "This is thread with counter: %d and thread ID: %lu", *counter, tid);
     printToLog(logF, ipAddress, logMsg);
 
+    // Debug. uncomment if req
     printf("\ncounter: %d", *counter);
+
     switch(*counter)
     {
         case 0:
@@ -522,7 +526,6 @@ int checkOperationCode(char *recMsg, int *op_code, char *tokenRecMsg)
     int rc = SUCCESS;              // Return code
  
     char *token;                   // Token
-    //const char joinDel = '$';      // JOIN message delimiter
  
     token = strtok(recMsg, "$");
 
@@ -584,36 +587,35 @@ int sendFunc()
 
     while(1)
     {
-    
-    initialize_two_hosts(ptr);
-    num_of_hosts_chosen = choose_n_hosts(ptr, GOSSIP_HOSTS);
+        initialize_two_hosts(ptr);
+        num_of_hosts_chosen = choose_n_hosts(ptr, GOSSIP_HOSTS);
 
-    sprintf(logMsg, "Number of hosts chosen to gossip: %d", num_of_hosts_chosen);
-    printToLog(logF, ipAddress, logMsg);
+        sprintf(logMsg, "Number of hosts chosen to gossip: %d", num_of_hosts_chosen);
+        printToLog(logF, ipAddress, logMsg);
 
-    for ( counter = 0; counter < num_of_hosts_chosen; counter++ )
-    {
-        strcpy(portNoChar, hb_table[hosts[counter].host_id].port);
-        portNo = atoi(portNoChar);
-        strcpy(ipAddr, hb_table[hosts[counter].host_id].IP);
-        // create message
-        i_rc = create_message(msgToSend);
-        if ( SUCCESS != i_rc )
+        for ( counter = 0; counter < num_of_hosts_chosen; counter++ )
         {
-            printToLog(logF, ipAddress, "Unable to create message");
-            continue;
-        }
+            strcpy(portNoChar, hb_table[hosts[counter].host_id].port);
+            portNo = atoi(portNoChar);
+            strcpy(ipAddr, hb_table[hosts[counter].host_id].IP);
+            // create message
+            i_rc = create_message(msgToSend);
+            if ( SUCCESS != i_rc )
+            {
+                printToLog(logF, ipAddress, "Unable to create message");
+                continue;
+            }
 
-        // Send UDP packets
-        numOfBytesSent = sendUDP(portNo, ipAddr, msgToSend);
-        // check if 0 bytes is sent
-        if ( SUCCESS == numOfBytesSent )
-        {
-            printToLog(logF, ipAddress, "ZERO bytes sent");
-            continue;
-        }
-    } // End of for ( counter = 0; counter < num_of_hosts_chosen; counter++ )
-    sleep(2);
+            // Send UDP packets
+            numOfBytesSent = sendUDP(portNo, ipAddr, msgToSend);
+            // check if 0 bytes is sent
+            if ( SUCCESS == numOfBytesSent )
+            {
+                printToLog(logF, ipAddress, "ZERO bytes sent");
+                continue;
+            }
+        } // End of for ( counter = 0; counter < num_of_hosts_chosen; counter++ )
+        sleep(2);
     } // End of while 
     
   rtn:
@@ -642,11 +644,12 @@ int heartBeatCheckerFunc()
 
     int rc = SUCCESS;        // Return code
 
-     while(1){
-       sleep(HEART_BEAT_UPDATE_SEC);
-       update_my_heartbeat();
-       check_table_for_failed_hosts();
-     }
+    while(1)
+    {
+        sleep(HEART_BEAT_UPDATE_SEC);
+        update_my_heartbeat();
+        check_table_for_failed_hosts();
+    }
 
   rtn:
     funcExit(logF, ipAddress, "heartBeatChecker", rc);
@@ -695,27 +698,27 @@ int main(int argc, char *argv[])
     /*
      * Init log file 
      */
+    // Debug. uncomment if req
     printf("\nCreating log\n");
+
     i_rc = logFileCreate(logF);
     if ( i_rc != SUCCESS )
     {
-         printf("\nLog file won't be created. There was an error\n");
+        printf("\nLog file won't be created. There was an error\n");
+        rc = ERROR;
+        goto rtn;
     }
 
+    // Debug. uncomment if req
     printf("\nlog success\n");
 
-    /*
-     * Copy ip address and port no to local buffer
-     */
-    memset(ipAddress, '\0', SMALL_BUF_SZ);
-    sprintf(ipAddress, "%s", argv[2]);
-    memset(portNo, '\0', SMALL_BUF_SZ);
-    sprintf(portNo, "%s", argv[1]);
-
-
+    // Debug. uncomment if req
     printf("\nfuncEntry\n");
-    funcEntry(logF, ipAddress, "host::main");
-    printf("\nAfter funcENtery\n");
+
+    funcEntry(logF, "I am starting", "host::main");
+
+    // Debug. uncomment if req
+    printf("\nAfter funcEntry\n");
 
     /*
      * Command line arguments check
@@ -735,13 +738,17 @@ int main(int argc, char *argv[])
     memset(portNo, '\0', SMALL_BUF_SZ);
     sprintf(portNo, "%s", argv[1]);
 
+    // Debug. uncomment if req
     printf("\n before init table\n");
+
     /*
      * Init local host heart beat table
      */
     initialize_table();
     printToLog(logF, ipAddress, "Initialized my table");
-     printf("\n AFter init tabl\n");
+
+    // Debug. uncomment if req
+    printf("\n AFter init tabl\n");
 
     /* 
      * Get the node type based on third argument. By default it
@@ -809,10 +816,15 @@ int main(int argc, char *argv[])
 
   rtn:
     funcExit(logF, ipAddress, "Host::main", rc);
+
     /*
      * Close the log
      */ 
-    logFileClose(logF);
+    if ( logF != NULL )
+    {
+        logFileClose(logF);
+    }
+
     return rc;
 
 } // End of main

@@ -33,9 +33,7 @@
 /*
  * Function Declarations
  */
-int logFileCreate(
-                  FILE *fp        // File pointer 
-                 );
+int logFileCreate();
 int printToLog(
              FILE *fp,            // File pointer 
              char *keyMessage,    // Message to be written as key 

@@ -31,15 +31,14 @@
  * DESCRIPTION: Function returns file pointer to log file on the 
  *              host  
  *              
- * PARAMETERS: 
- *            (FILE *) fp - file pointer
+ * PARAMETERS: NONE
  * 
  * RETURN:
  * (int) ZERO if success
  *       ERROR otherwise
  * 
  ****************************************************************/
-int logFileCreate(FILE *fp)
+int logFileCreate()
 {
 
     int rc = SUCCESS;        // Return code 
@@ -51,6 +50,7 @@ int logFileCreate(FILE *fp)
         rc = ERROR;
         goto rtn;
     }   
+
   rtn:
     return rc;
  
