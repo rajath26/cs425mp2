@@ -41,6 +41,7 @@
  *                            iii) Host Type 
  *                                 "leader" -> Leader Node
  *                                 "member" -> Member Node
+ *                            iv) Host ID
  * 
  * RETURN:
  * (int) ZERO if success
@@ -703,6 +704,7 @@ int heartBeatCheckerFunc()
  *                            iii) Host Type 
  *                                 "leader" -> Leader Node
  *                                 "member" -> Member Node
+ *                            iv) Host ID
  * 
  * RETURN:
  * (int) ZERO if success
@@ -763,6 +765,7 @@ int main(int argc, char *argv[])
     sprintf(ipAddress, "%s", argv[2]);
     memset(portNo, '\0', SMALL_BUF_SZ);
     sprintf(portNo, "%s", argv[1]);
+    host_no = atoi(argv[4]);
 
     // Debug. uncomment if req
     printf("\n before init table\n");
@@ -770,7 +773,7 @@ int main(int argc, char *argv[])
     /*
      * Init local host heart beat table
      */
-    initialize_table();
+    initialize_table(ipAddress, portNo, host_no);
     printToLog(logF, ipAddress, "Initialized my table");
 
     // Debug. uncomment if req
