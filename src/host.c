@@ -759,9 +759,6 @@ int main(int argc, char *argv[])
     char leaderIpAddress[SMALL_BUF_SZ],  // Buffer to hold leader ip
          leaderPortNo[SMALL_BUF_SZ];     // Buffer to hold leader port no
 
-    // Debug. uncomment if req
-    host_no = 1; 
-
     /*
      * Init log file 
      */
