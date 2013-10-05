@@ -4,7 +4,7 @@
 #include<unistd.h>
 #include"logger.c"
 #include"message.h"
-#define TREMOVE 20
+#define TREMOVE 5
 
 //FILE *log1;
 /*
@@ -159,9 +159,10 @@ int initialize_table(char *port,char *ip,int host_id)
   char portNo[100];
   char ipAddr[100];
   int hostId;
+  hostId=host_id;
   strcpy(portNo, port);
   strcpy(ipAddr, ip);
-  hostId = host_id;
+  host_no = host_id;
   funcEntry(logF,ip_Address,"initialize_table");
   printToLog(logF,ip_Address,"Initializing gossip table");
   printToLog(logF,"DEBUG ME",port);
@@ -173,8 +174,9 @@ int initialize_table(char *port,char *ip,int host_id)
 //  pthread_mutex_lock(&table_mutex);
   for(i=0;i<MAX_HOSTS;i++)
     {
-      if(i!=host_id)
+      if(i!=host_id){
          memset(&hb_table[i],0,sizeof(struct hb_entry));
+         hb_table[i].hb_count=-1;}
       else {
          hb_table[i].valid=1;   // initialize the appropriate the host_id entry
          struct timeval start;
@@ -186,7 +188,7 @@ int initialize_table(char *port,char *ip,int host_id)
          strcpy(hb_table[i].IP,ipAddr); // initialize ip
          printToLog(logF, "I HOPE THI IS NOT TRUNCATED", hb_table[i].IP);
          strcpy(hb_table[i].port,portNo);  // initialize port
-         hb_table[i].hb_count=-1;
+         hb_table[i].hb_count=1;
          strcpy(hb_table[i].time_stamp,"0");
          hb_table[i].status=1;
          update_my_heartbeat();
@@ -236,8 +238,8 @@ int update_table(struct hb_entry *msg_table)
   pthread_mutex_lock(&table_mutex);
   //clear_temp_entry_table(msg_table);
   for(i=0;i<MAX_HOSTS;i++){
-       if(msg_table[i].valid){
-              if(msg_table[i].hb_count >= hb_table[i].hb_count){
+       if(msg_table[i].valid && msg_table[i].status){
+              if(msg_table[i].hb_count > hb_table[i].hb_count){
                        if(!hb_table[i].valid){
                                  hb_table[i].valid=1;
                                  strcpy(hb_table[i].host_id,msg_table[i].host_id);
@@ -263,6 +265,7 @@ int update_table(struct hb_entry *msg_table)
               }
        }
   }
+  clear_temp_entry_table(msg_table);
   pthread_mutex_unlock(&table_mutex);
  // logMsg=create_message(hb_table);
   printToLog(logF,ip_Address,logMsg1);
@@ -292,7 +295,7 @@ struct hb_entry* extract_message(char *input)
     }
     printf("no_entries :%d\n",j);
     i=0;
-    while(i<j){
+    while(i<j && i<MAX_HOSTS){
             
                printf("inside_while : %s\n",a[i]);
                       
@@ -348,43 +351,44 @@ void initialize_two_hosts(struct two_hosts* ptr)
 int choose_n_hosts(struct two_hosts *ptr, int choice)
 {
   funcEntry(logF,ip_Address,"choose_n_hosts");
-  int i=0;
-  int k=0;
-  int count=0;
-  int value;
+  int i;
   int list[MAX_HOSTS];
-  for(i=0;i<MAX_HOSTS;i++) list[i]=0;
-  int counter=0;
+  //see who are all present in the hb_table
+  int k=0;
+  int vis[MAX_HOSTS];
+  for(i=0;i<MAX_HOSTS;i++)vis[i]=0;
   for(i=0;i<MAX_HOSTS;i++){
-         if(hb_table[i].valid){
-                     list[counter]=i;
-                     counter++;
-         }
+
+          if(i!=host_no && hb_table[i].valid && hb_table[i].status){
+  
+               printToLog(logF,"INSIDE IF IN CHOSEN HOSTS","FIRST IF");
+               list[k]=i;
+               k++;
+           }
   }
-  if(counter==1)
-    return -1;
-  // choose the remaining host
-  if(counter==2){
-       for(i=0;i<counter;i++){
-              if(i!=host_no){
-                    ptr[k].host_id=list[i];
-                    ptr[k].valid = 1;
-               }       
-       }
+  if(k==1)
+  {
+     ptr[0].host_id = list[0];
+     ptr[0].valid = 1;
+     return k;
   }
-  //general case - iterate till you find choice number of hosts
-  for(i=0;i<choice;i++){
-        while(1){ // don't find me
-              value=rand()%counter;
-              if(list[value]!=host_no)
-              break;
-        }
-      ptr[k].host_id=list[value];
-      ptr[k].valid=1;
-      k++;
-  } 
+  if(k>1){
+      int value;
+      int m=0;
+          while(1){
+               value = rand()%k;
+               if(vis[value] == 0){
+                    vis[value]=1;
+                    ptr[m].host_id=list[value];
+                    ptr[m].valid=1;
+                    m++;
+               }
+             if(m==choice)
+               break;
+          }
+  }             
  funcExit(logF,ip_Address,"choose_n_hosts",0);
- return counter;
+ return choice;
 }
   
 /*

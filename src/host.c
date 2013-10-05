@@ -417,7 +417,7 @@ int receiverFunc()
      */
 
     // Debug. uncomment if req
-    print_table(hb_table);
+    //print_table(hb_table);
 
     for(;;)
     {
@@ -499,7 +499,7 @@ int receiverFunc()
             }
 
             // Debug. uncomment if req
-            print_table(hb_table);
+	    // print_table(hb_table);
         } // End of if ( JOIN_OP_CODE == op_code )
         /////////
         // Step 4
@@ -643,7 +643,7 @@ int sendFunc()
         num_of_hosts_chosen = choose_n_hosts(ptr, GOSSIP_HOSTS);
 
         // Debug. uncomment if req
-        print_table(hb_table);
+        //print_table(hb_table);
 
         sprintf(logMsg, "Number of hosts chosen to gossip: %d", num_of_hosts_chosen);
         printToLog(logF, ipAddress, logMsg);
@@ -711,6 +711,7 @@ int heartBeatCheckerFunc()
         sleep(HEART_BEAT_UPDATE_SEC);
         update_my_heartbeat();
         check_table_for_failed_hosts();
+        print_table(hb_table);
     }
 
   rtn:
