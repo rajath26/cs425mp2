@@ -129,9 +129,6 @@ int funcEntry(FILE *fp, char *keyMsg, char *funcName)
 
     int rc = SUCCESS;        // Return code
     
-    // Debug. uncomment if req
-    printf("\nhello ::: %s  %s\n",keyMsg,funcName);
- 
     fprintf(fp, "%s : ENTRY - %s\n", keyMsg, funcName);
     fflush(fp);
 

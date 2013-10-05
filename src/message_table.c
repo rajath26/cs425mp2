@@ -369,7 +369,7 @@ int choose_n_hosts(struct two_hosts *ptr, int choice)
 
   if (k==0) 
 {
-funcExit(logF, "", -1);
+funcExit(logF, "", "choose_n_hosts", -1);
 return -1;
 
 }
@@ -377,7 +377,7 @@ return -1;
   {
      ptr[0].host_id = list[0];
      ptr[0].valid = 1;
-     funcExit(logF, "", 1);
+     funcExit(logF, "", "choose_n_hosts", 1);
      return k;
   }
   if(k>1){
