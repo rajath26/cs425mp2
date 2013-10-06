@@ -12,7 +12,7 @@
 #define PORT_LENGTH 5
 #define TIME_STAMP_LEN 20
 #define HEART_BEAT_UPDATE_SEC 1
-
+#define TREMOVE 20
 
 pthread_mutex_t table_mutex;
 
