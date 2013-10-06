@@ -270,7 +270,7 @@ int askLeaderIfRejoinOrNew()
         printf("\t\tWelcome to the Daisy Distributed System\n");
         printf("\t\t***************************************\n");
         printf("\t\t***************************************\n");
-        printf("\nIs this:\n 1)First incarnation of the leader or 2)Reincarnation of the leader to join back?\n");
+        printf("\nIs this:\n 1)First incarnation of the leader or \n2)Reincarnation of the leader to join back?\n");
         scanf("%d", &choice);
 
         if ( NEW_INCARNATION == choice )
