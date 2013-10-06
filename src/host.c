@@ -269,9 +269,6 @@ int spawnHelperThreads()
         ptr[counter] = (int *) malloc(sizeof(int));
         *(ptr[counter]) = counter;
 
-        // Debug. Uncomment if req
-        printf("\nptr : %d\n", *ptr[counter]);
-
         i_rc = pthread_create(&threadID[counter], NULL, startKelsa, (void *) ptr[counter]); 
         if ( SUCCESS != i_rc )
         {
@@ -325,9 +322,6 @@ void * startKelsa(void *threadNum)
 
     sprintf(logMsg, "This is thread with counter: %d and thread ID: %lu", *counter, tid);
     printToLog(logF, ipAddress, logMsg);
-
-    // Debug. uncomment if req
-    printf("\ncounter: %d", *counter);
 
     switch(*counter)
     {
@@ -416,9 +410,6 @@ int receiverFunc()
      *    ii) Update heartbeat table
      */
 
-    // Debug. uncomment if req
-    //print_table(hb_table);
-
     for(;;)
     {
         /////////
@@ -498,8 +489,6 @@ int receiverFunc()
                  continue;
             }
 
-            // Debug. uncomment if req
-	    // print_table(hb_table);
         } // End of if ( JOIN_OP_CODE == op_code )
         /////////
         // Step 4
@@ -646,9 +635,6 @@ int sendFunc()
         initialize_two_hosts(ptr);
         num_of_hosts_chosen = choose_n_hosts(ptr, GOSSIP_HOSTS);
 
-        // Debug. uncomment if req
-        //print_table(hb_table);
-
         sprintf(logMsg, "Number of hosts chosen to gossip: %d", num_of_hosts_chosen);
         printToLog(logF, ipAddress, logMsg);
 
@@ -772,9 +758,6 @@ int main(int argc, char *argv[])
     /*
      * Init log file 
      */
-    // Debug. uncomment if req
-    printf("\nCreating log\n");
-
     i_rc = logFileCreate();
     if ( i_rc != SUCCESS )
     {
@@ -783,16 +766,7 @@ int main(int argc, char *argv[])
         goto rtn;
     }
 
-    // Debug. uncomment if req
-    printf("\nlog success\n");
-
-    // Debug. uncomment if req
-    printf("\nfuncEntry\n");
-
     funcEntry(logF, "I am starting", "host::main");
-
-    // Debug. uncomment if req
-    printf("\nAfter funcEntry\n");
 
     /*
      * Command line arguments check
@@ -813,17 +787,11 @@ int main(int argc, char *argv[])
     sprintf(portNo, "%s", argv[1]);
     host_no = atoi(argv[4]);
 
-    // Debug. uncomment if req
-    printf("\n before init table\n");
-
     /*
      * Init local host heart beat table
      */
     initialize_table(portNo, ipAddress, host_no);
     printToLog(logF, ipAddress, "Initialized my table");
-
-    // Debug. uncomment if req
-    printf("\n AFter init tabl\n");
 
     /* 
      * Get the node type based on third argument. By default it
