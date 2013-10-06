@@ -143,6 +143,49 @@ int host_to_network(char *message)
 }
 
 /*
+ * This function initializes the required member. This is required for the leader
+ * to join
+ */
+
+int initialize_table_with_member(char *port,char *ip, int host_id)
+{
+  int i=0;
+  char portNo[100];
+  char ipAddr[100];
+  int hostId;
+  hostId=host_id;
+  strcpy(ip_Address,ip);
+  strcpy(portNo, port);
+  strcpy(ipAddr, ip);
+  funcEntry(logF,ip_Address,"initialize_member_entry");
+  printToLog(logF,ip_Address,"Initializing gossip table");
+
+  for(i=0;i<MAX_HOSTS;i++){
+      if(i==host_id){
+         hb_table[i].valid=1;   // initialize the appropriate the host_id entry
+         struct timeval start;
+         gettimeofday(&start,NULL);
+         char buffer[70];
+         sprintf(buffer,"%d_%ld",hostId,start.tv_sec);
+
+         strcpy(hb_table[i].host_id,buffer); // initialize host_id
+         strcpy(hb_table[i].IP,ipAddr); // initialize ip
+         printToLog(logF, "I HOPE THIS IS NOT TRUNCATED", hb_table[i].IP);
+         strcpy(hb_table[i].port,portNo);  // initialize port
+         hb_table[i].hb_count=1;
+         strcpy(hb_table[i].time_stamp,"0");
+         hb_table[i].status=1;
+         update_my_heartbeat();
+    }
+  }
+    funcExit(logF,ip_Address,"initialize_member_table",0);
+return 0;
+
+}
+
+ 
+
+/*
  * This function helps to initialize the table with appropriate values
  * input params : port, ip and the host_id
  */
