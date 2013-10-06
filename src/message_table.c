@@ -88,12 +88,12 @@ int check_table_for_failed_hosts()
                 long int cmp_time = atoi(hb_table[i].time_stamp);
                 if((timer.tv_sec - cmp_time) >= TFAIL){
                            hb_table[i].status = DOWN;
-                           sprintf(logMsg1,"Entry %d is being marked DOWN\n",i);
+                           sprintf(logMsg1,"Entry %d is being marked DOWN at %ld time, time at the last_update is %s\n",i,timer.tv_sec,hb_table[i].time_stamp);
                            printToLog(logF,ip_Address,logMsg1);
                 }
                 if((timer.tv_sec - cmp_time) >= TREMOVE){
                            delete_entry_table(i);
-                           sprintf(logMsg1,"Entry %d is being removed\n",i);  
+                           sprintf(logMsg1,"Entry %d is being removed at %ld time, time at the last_update is %s\n",i,timer.tv_sec,hb_table[i].time_stamp);  
                            printToLog(logF,ip_Address,logMsg1);
                 }
        }
@@ -154,6 +154,7 @@ int initialize_table(char *port,char *ip,int host_id)
   char ipAddr[100];
   int hostId;
   hostId=host_id;
+  strcpy(ip_Address,ip);
   strcpy(portNo, port);
   strcpy(ipAddr, ip);
   host_no = host_id;
