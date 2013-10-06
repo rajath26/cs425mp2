@@ -236,6 +236,71 @@ int CLI_UI()
 } // End of CLI_UI()
 
 /*****************************************************************
+ * NAME: askLeaderIfRejoinOrNew 
+ *
+ * DESCRIPTION: This function is executed for leader to determine 
+ *              if this is the first call of leader or if leader
+ *              had crashed and wants to rejoin 
+ *              
+ * PARAMETERS: NONE
+ * 
+ * RETURN:
+ * (int) ZERO if success
+ *       ERROR otherwise
+ * 
+ ****************************************************************/
+int askLeaderIfRejoinOrNew()
+{
+
+    funcEntry(logF, ipAddress, "askLeaderIfRejoinOrNew");
+
+    int rc = SUCCESS,                // Return code
+        choice,                      // Choice
+        memNo;                       // Member host no
+ 
+    char memIP[SMALL_BUF_SZ],        // Member IP
+         memPort[SMALL_BUF_SZ];      // Member Port
+        
+
+    while(1)
+    {
+        printf("\n");
+        printf("\t\t***************************************\n");
+        printf("\t\t***************************************\n");
+        printf("\t\tWelcome to the Daisy Distributed System\n");
+        printf("\t\t***************************************\n");
+        printf("\t\t***************************************\n");
+        printf("\nIs this:\n 1)First incarnation of the leader or 2)Reincarnation of the leader to join back?\n");
+        scanf("%d", &choice);
+
+        if ( NEW_INCARNATION == choice )
+        {
+            goto rtn;
+        }
+        else if ( REINCARNATION == choice )
+        {
+            printf("\nInput the IP of atleast one other member in the Daisy distributed system:\n");
+            scanf("%s", memIP);
+            printf("\nInput the Port No of other member (IP chosen above):\n");
+            scanf("%s", memPort);
+            printf("\nInput host no of the other member (same as one chosen above):\n");
+            scanf("%d", &memNo);
+            initialize_table_with_member(memPort, memIP, memNo);
+            goto rtn;
+        }
+        else 
+        {
+            continue;
+        }
+    } // End of whie(1)
+
+  rtn:
+    funcExit(logF, ipAddress, "askLeaderIfRejoinOrNew", rc);
+    return rc;
+
+} // End if askLeaderIfRejoinOrNew()
+
+/*****************************************************************
  * NAME: spawnHelperThreads 
  *
  * DESCRIPTION: This function spawns helper threads 
@@ -845,6 +910,20 @@ int main(int argc, char *argv[])
             goto rtn;
         }
     }
+    /* 
+     * If leader ask if this a new incarnation or a 
+     * reincarnation
+     */
+    else
+    {
+        i_rc = askLeaderIfRejoinOrNew();
+        if ( i_rc != SUCCESS )
+        {
+            rc = ERROR;
+            goto rtn;
+        }
+    }
+    
 
     /*
      * Spawn the helper threads

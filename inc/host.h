@@ -47,6 +47,8 @@
 #define JOIN_OP_CODE       9
 #define RECEIVE_HB_OP_CODE 8
 #define GOSSIP_HOSTS       2
+#define NEW_INCARNATION    1
+#define REINCARNATION      2
 #define SMALL_BUF_SZ       100
 #define MED_BUF_SZ         1024
 #define LONG_BUF_SZ       4096
@@ -78,6 +80,7 @@ int requestMembershipToLeader(
                               char *leaderIp      // Leader IP 
                              );
 int CLI_UI();
+int askLeaderIfRejoinOrNew();
 int spawnHelperThreads();
 void * startKelsa(void *);
 int receiverFunc();
