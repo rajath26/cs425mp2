@@ -4,7 +4,7 @@
 #include<unistd.h>
 #include"logger.c"
 #include"message.h"
-#define TREMOVE 5
+#define TREMOVE 20 
 
 //FILE *log1;
 /*

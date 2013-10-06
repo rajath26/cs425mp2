@@ -58,7 +58,7 @@ int CLA_checker(int argc, char *argv[])
     if ( argc != NUM_OF_CL_ARGS )
     {
         printf("\nInvalid usage\n");
-        printf("\nUsage information: %s <port_no> <ip_address>", argv[0]);
+        printf("\nUsage information: %s <port_no> <ip_address> <host_type> <host_id>", argv[0]);
         rc = ERROR;
         goto rtn;
     }
@@ -631,8 +631,12 @@ int sendFunc()
  
     ptr = hosts;
 
+    int n = 0;
+
     while(1)
     {
+
+        n++;
 
         memset(msgToSend, '\0', LONG_BUF_SZ);
 
@@ -666,6 +670,12 @@ int sendFunc()
             // Debug
             printToLog(logF, "SENDOct3 after create_message", msgToSend);
 
+            if ( SUCCESS == n%2 )
+            {
+                printToLog(logF, ipAddress, "Packet loss simulated in this func call");
+                continue;
+            }
+
             // Send UDP packets
             numOfBytesSent = sendUDP(portNo, ipAddr, msgToSend);
             // check if 0 bytes is sent
@@ -677,7 +687,7 @@ int sendFunc()
             
             memset(msgToSend, '\0', LONG_BUF_SZ);
         } // End of for ( counter = 0; counter < num_of_hosts_chosen; counter++ )
-        sleep(2);
+        sleep(1);
     } // End of while 
     
   rtn:
