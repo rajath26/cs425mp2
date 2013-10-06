@@ -7,10 +7,10 @@
 #define JOIN_OPCODE 1
 #define LEAVE_OPCODE 2
 #define MAX_CHOSEN_HOSTS 2
-#define HOSTID_LENGTH 70
-#define IP_ADDRESS_LEN 100 
+#define HOSTID_LENGTH 20 
+#define IP_ADDRESS_LEN 30 
 #define PORT_LENGTH 5
-#define TIME_STAMP_LEN 20
+#define TIME_STAMP_LEN 15 
 #define HEART_BEAT_UPDATE_SEC 1
 #define TREMOVE 20
 
